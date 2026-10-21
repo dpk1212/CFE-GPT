@@ -91,12 +91,12 @@ img { display: block; max-width: 100%; }
 .sheet, .dash { max-width: 1180px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
 .quiet { color: var(--muted); }
 .text-link { color: var(--blue); font-weight: 700; }
-.partner-lead { display: grid; grid-template-columns: 1fr 1.1fr; gap: 2rem; align-items: end; margin-bottom: 2rem; }
+.partner-lead { display: grid; grid-template-columns: 1fr 1.1fr; gap: 2rem; align-items: flex-end; margin-bottom: 2rem; }
 .partner-bars { width: 100%; height: auto; }
 .partner-list { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 1.5rem; }
 .partner-list li { border-top: 1px solid var(--line); padding-top: 0.55rem; }
 
-.dash-toolbar { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: 1rem; }
+.dash-toolbar { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-end; margin-bottom: 1rem; }
 .dash-toolbar p { margin: 0; color: var(--muted); max-width: 46rem; }
 .segment { display: flex; border: 1px solid var(--blue); }
 .segment button { background: white; color: var(--blue); border: 0; padding: 0.45rem 0.75rem; font-weight: 600; }
