@@ -35,8 +35,17 @@ export function HistoryDashboard() {
 
   return (
     <div className="dash">
+      <section className="signature" aria-label="2025 to 2026 headline figures">
+        <p>2025–26 file · 2027 rankings cycle</p>
+        <div>
+          <article><strong>{integer(latest.enrollment)}</strong><span>Enrollment</span></article>
+          <article><strong>{percent(latest.ugShare)}</strong><span>Undergraduate share</span></article>
+          <article><strong>{integer(latest.partners)}</strong><span>Reporting partners</span></article>
+          <article><strong>{money(latest.scholarshipDollarsCumulative)}</strong><span>Cumulative awards</span></article>
+        </div>
+      </section>
       <div className="dash-toolbar">
-        <p>2025–26 reporting year, prepared for the 2027 rankings cycle. Change versus 2024–25 is shown on each card.</p>
+        <p>Change on each card is versus the 2024–25 reporting year. Switch the axis between the rankings cycle and the academic year.</p>
         <div className="segment" role="group" aria-label="Axis labels">
           <button type="button" aria-pressed={mode === "cycle"} className={mode === "cycle" ? "on" : ""} onClick={() => setMode("cycle")}>Rankings year</button>
           <button type="button" aria-pressed={mode === "academic"} className={mode === "academic" ? "on" : ""} onClick={() => setMode("academic")}>Academic year</button>
@@ -49,8 +58,8 @@ export function HistoryDashboard() {
             <p className="kpi-label">{item.label}</p>
             <p className="kpi-value">{item.value}</p>
             <p className="kpi-note">
-              {item.note}
-              {item.delta ? <span className={item.delta.startsWith("-") ? "down" : "up"}>{item.delta}</span> : null}
+              <span>{item.note}</span>
+              {item.delta ? <span className={item.delta.startsWith("-") ? "pill down" : "pill up"}>{item.delta}</span> : <span className="pill flat">Cumulative</span>}
             </p>
           </article>
         ))}
@@ -205,7 +214,7 @@ function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; li
               y={y}
               width={slot * 0.56}
               height={barH}
-              fill={active === index ? "#FFCB05" : "#00274C"}
+              fill={active === index ? "#FFCB05" : index === bars.values.length - 1 ? "#E0B000" : "#00274C"}
               onMouseEnter={() => setActive(index)}
               onMouseLeave={() => setActive(null)}
             />
