@@ -5,12 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const links = [
-  { href: "/rankings", label: "Rankings" },
-  { href: "/programs", label: "Programs" },
-  { href: "/courses", label: "Courses" },
-  { href: "/programs/i-corps", label: "I-Corps" },
-  { href: "/guide", label: "Guide" },
-  { href: "/visit", label: "Visit" },
+  { href: "/partners", label: "Partners" },
+  { href: "/historical-data", label: "Historical Data" },
+  { href: "/login", label: "Log in" },
 ];
 
 export function Header() {
@@ -21,30 +18,13 @@ export function Header() {
     setOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
-
   return (
     <header className="nav">
       <div className="nav-inner">
-        <Link href="/" className="brand" aria-label="Center for Entrepreneurship home">
-          <span className="brand-mark">CFE</span>
-          <span>
-            <span className="brand-name">Center for Entrepreneurship</span>
-            <span className="brand-sub">University of Michigan</span>
-          </span>
+        <Link href="/" className="brand" aria-label="CFE home">
+          <img src="/cfe-logo.png" alt="CFE" width={168} height={48} />
         </Link>
-        <button
-          className="nav-toggle"
-          type="button"
-          aria-expanded={open}
-          aria-controls="site-nav"
-          onClick={() => setOpen((value) => !value)}
-        >
+        <button className="nav-toggle" type="button" aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((value) => !value)}>
           {open ? "Close" : "Menu"}
         </button>
         <nav id="site-nav" className={open ? "nav-links open" : "nav-links"} aria-label="Primary">
