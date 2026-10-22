@@ -82,9 +82,9 @@ export function HistoryDashboard() {
       help: "Student prize money since 2017–18. This card is the running total. The chart shows each year’s awards beside that total.",
     },
     {
-      label: "Grants and awards, cumulative",
+      label: "Grants and scholarships, cumulative",
       value: money(latest.scholarshipDollarsCumulative),
-      note: `${integer(latest.scholarships)} awards · ${money(latest.scholarshipDollars)} this year`,
+      note: `${integer(latest.scholarships)} grants and scholarships · ${money(latest.scholarshipDollars)} this year`,
       delta: awardDelta.label,
       help: "Scholarships and grants from any source. The change compares this year’s dollars with last year. The figure is the total since 2017–18.",
     },
@@ -98,7 +98,7 @@ export function HistoryDashboard() {
           <article><strong>{integer(latest.enrollment)}</strong><span>Enrollment</span></article>
           <article><strong>{percent(latest.ugShare)}</strong><span>Undergraduate share</span></article>
           <article><strong>{integer(latest.partners)}</strong><span>Partners</span></article>
-          <article><strong>{money(Math.round((latest.prizeCumulative + latest.scholarshipDollarsCumulative) * 100) / 100)}</strong><span>Prize and awards</span></article>
+          <article><strong>{money(Math.round((latest.prizeCumulative + latest.scholarshipDollarsCumulative) * 100) / 100)}</strong><span>Prize, grants, and scholarships</span></article>
         </div>
       </section>
       <div className="dash-toolbar">
@@ -158,10 +158,10 @@ export function HistoryDashboard() {
             line={{ name: "Running total", values: history.map((row) => row.prizeCumulative), format: money, axis: compactMoney }}
           />
         </Panel>
-        <Panel title="Student grants and awards" note="Bars are the number of scholarships and grants. The line is total dollars since 2017–18. Left is awards. Right is dollars." wide openHelp={openHelp} onToggle={toggleHelp}>
+        <Panel title="Grants and scholarships" note="Bars are the number of grants and scholarships. The line is total dollars since 2017–18. Left is the count. Right is dollars." wide openHelp={openHelp} onToggle={toggleHelp}>
           <ComboChart
             labels={labels}
-            bars={{ name: "Awards that year", values: history.map((row) => row.scholarships), format: integer, axis: compactCount }}
+            bars={{ name: "Grants and scholarships", values: history.map((row) => row.scholarships), format: integer, axis: compactCount }}
             line={{ name: "Cumulative dollars", values: history.map((row) => row.scholarshipDollarsCumulative), format: money, axis: compactMoney }}
           />
         </Panel>
@@ -183,9 +183,9 @@ export function HistoryDashboard() {
                 <th>Venture tests</th>
                 <th>Prize money</th>
                 <th>Prize, cumulative</th>
-                <th>Awards</th>
-                <th>Award dollars</th>
-                <th>Award dollars, cumulative</th>
+                <th>Grants and scholarships</th>
+                <th>Grant and scholarship dollars</th>
+                <th>Dollars, cumulative</th>
               </tr>
             </thead>
             <tbody>
