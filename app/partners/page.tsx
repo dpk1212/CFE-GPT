@@ -11,9 +11,10 @@ export default function PartnersPage() {
   return (
     <article>
       <header className="page-hero">
-        <span className="tick" aria-hidden />
-        <h1>Partners</h1>
-        <p>The colleges, schools, and units of Entrepreneurship &amp; Innovation at Michigan.</p>
+        <div className="hero-rule">
+          <h1>Partners</h1>
+          <p>The colleges, schools, and units of Entrepreneurship &amp; Innovation at Michigan.</p>
+        </div>
       </header>
       <section className="sheet">
         <p className="directory-note">

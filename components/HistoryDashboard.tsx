@@ -98,7 +98,7 @@ export function HistoryDashboard() {
           <article><strong>{integer(latest.enrollment)}</strong><span>Enrollment</span></article>
           <article><strong>{percent(latest.ugShare)}</strong><span>Undergraduate share</span></article>
           <article><strong>{integer(latest.partners)}</strong><span>Partners</span></article>
-          <article><strong>{money(latest.scholarshipDollarsCumulative)}</strong><span>Cumulative awards</span></article>
+          <article><strong>{money(Math.round((latest.prizeCumulative + latest.scholarshipDollarsCumulative) * 100) / 100)}</strong><span>Prize and awards</span></article>
         </div>
       </section>
       <div className="dash-toolbar">
@@ -119,7 +119,7 @@ export function HistoryDashboard() {
             <p className="kpi-value">{item.value}</p>
             <p className="kpi-note">
               <span>{item.note}</span>
-              {item.delta ? <span className={item.delta.startsWith("-") ? "pill down" : "pill up"}>{item.delta}</span> : <span className="pill flat">Cumulative</span>}
+              {item.delta && !item.delta.startsWith("-") ? <span className="pill up">{item.delta}</span> : item.delta ? null : <span className="pill flat">Cumulative</span>}
             </p>
           </article>
         ))}
