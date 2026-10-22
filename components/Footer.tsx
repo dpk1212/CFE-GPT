@@ -5,7 +5,7 @@ export function Footer() {
         <div>
           <p className="footer-kicker">University of Michigan</p>
           <p className="footer-name">Entrepreneurship &amp; Innovation</p>
-          <p>The Center for Entrepreneurship coordinates Michigan’s undergraduate Princeton Review ranking. Graduate rankings are prepared by the Zell Lurie Institute.</p>
+          <p>The Center for Entrepreneurship coordinates Michigan’s undergraduate Princeton Review ranking. Graduate rankings are coordinated by the Zell Lurie Institute.</p>
         </div>
         <div>
           <p className="footer-kicker">Center for Entrepreneurship</p>

@@ -3,12 +3,12 @@ import { history, integer, latest, percent } from "@/lib/history";
 
 const activities = [
   { name: "Entrepreneurship Minor and ENTR courses", note: "Open to students in every school and college.", href: "/partners#university" },
-  { name: "Zell Lurie Institute", note: "Ross grants, mentors, and accelerators. The Institute prepares the graduate rankings.", href: "/partners#ross" },
+  { name: "Zell Lurie Institute", note: "Ross grants, mentors, and accelerators. The Institute coordinates the graduate rankings.", href: "/partners#ross" },
   { name: "Business + Tech and Business + Impact", note: "Competitions, Impact Studio, and DNEP.", href: "/partners#ross" },
   { name: "Center for Entrepreneurship", note: "ELP, EHour, I-Corps, and the TechLabs. Coordinates the undergraduate ranking.", href: "/partners#engineering" },
   { name: "optiMize", note: "LSA’s social innovation challenge and student community.", href: "/partners#lsa" },
   { name: "EXCEL Lab", note: "Venture and career support in Music, Theatre & Dance.", href: "/partners#smtd" },
-  { name: "Center for Socially Engaged Design", note: "Includes Innovation in Action.", href: "/partners#engineering" },
+  { name: "Center for Socially Engaged Engineering & Design", note: "Includes Innovation in Action.", href: "/partners#engineering" },
   { name: "Wilson Center and MDP", note: "Engineering team projects and multidisciplinary design.", href: "/partners#engineering" },
 ];
 
@@ -21,7 +21,7 @@ export default function HomePage() {
         <p className="eyebrow">Princeton Review · Entrepreneur · 2026</p>
         <h1>Undergraduate overview</h1>
         <p className="brief-lede">
-          Michigan’s undergraduate entrepreneurship ranking, prepared with the campus partners and coordinated by the Center for Entrepreneurship. Graduate rankings are prepared by the Zell Lurie Institute.
+          Michigan’s undergraduate entrepreneurship ranking, prepared with the campus partners and coordinated by the Center for Entrepreneurship. Graduate rankings are coordinated by the Zell Lurie Institute.
         </p>
         <div className="stat-band" aria-label="2026 undergraduate placement">
           <article>

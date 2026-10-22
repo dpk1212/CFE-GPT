@@ -25,8 +25,8 @@ export const colleges: College[] = [
         href: "https://cfe.umich.edu/",
       },
       {
-        name: "Center for Socially Engaged Design",
-        aka: "CSED",
+        name: "Center for Socially Engaged Engineering & Design",
+        aka: "C-SED",
         note: "Socially engaged engineering and design, including Innovation in Action, a months-long challenge open to any discipline.",
         href: "https://csed.engin.umich.edu/",
       },
@@ -46,6 +46,11 @@ export const colleges: College[] = [
         note: "Workspace, training, and support for Engineering student project teams.",
         href: "https://teamprojects.engin.umich.edu/",
       },
+      {
+        name: "ArtsEngine",
+        note: "A partnership across art, design, architecture, music, engineering, and information. 2025–26 was its final year.",
+        href: "https://artsengine.engin.umich.edu/",
+      },
     ],
   },
   {
@@ -56,7 +61,7 @@ export const colleges: College[] = [
       {
         name: "Zell Lurie Institute for Entrepreneurship",
         aka: "ZLI",
-        note: "Grants, mentorship, and accelerators for student ventures, including venture capital. Prepares Michigan’s graduate rankings.",
+        note: "Grants, mentorship, and accelerators for student ventures, including venture capital. Coordinates Michigan’s graduate rankings.",
         href: "https://zli.umich.edu/",
       },
       {
@@ -209,11 +214,6 @@ export const colleges: College[] = [
     name: "University-wide",
     short: "University-wide",
     units: [
-      {
-        name: "ArtsEngine",
-        note: "A partnership across art, design, architecture, music, engineering, and information. Its funding programs now continue through Engaged Michigan.",
-        href: "https://artsengine.engin.umich.edu/",
-      },
       {
         name: "Entrepreneurship Minor",
         note: "A 15-credit minor open to undergraduates in any school. Offered through the Office of the Provost.",

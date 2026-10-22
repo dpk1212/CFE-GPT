@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s | Entrepreneurship & Innovation",
   },
   description:
-    "University of Michigan Entrepreneurship & Innovation. The undergraduate Princeton Review ranking, prepared with the campus partners. Graduate rankings are prepared by the Zell Lurie Institute.",
+    "University of Michigan Entrepreneurship & Innovation. The undergraduate Princeton Review ranking, prepared with the campus partners. Graduate rankings are coordinated by the Zell Lurie Institute.",
   openGraph: {
     title: "Entrepreneurship & Innovation | University of Michigan",
     description: "Michigan’s undergraduate entrepreneurship ranking, and the partners behind it.",

@@ -41,7 +41,7 @@ export default function PartnersPage() {
                 <p>{college.units[0].note}</p>
                 {college.units[0].href ? (
                   <a className="unit-link" href={college.units[0].href} target="_blank" rel="noreferrer">
-                    Official site
+                    Website
                   </a>
                 ) : null}
               </div>
@@ -56,7 +56,7 @@ export default function PartnersPage() {
                   <p>{unit.note}</p>
                   {unit.href ? (
                     <a className="unit-link" href={unit.href} target="_blank" rel="noreferrer">
-                      Official site
+                      Website
                     </a>
                   ) : null}
                 </li>
