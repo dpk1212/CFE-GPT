@@ -10,10 +10,10 @@ export function LoginForm() {
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!email.trim() || !password) {
-      setMessage("Enter the email and password issued by the Center.");
+      setMessage("Enter your email and password.");
       return;
     }
-    setMessage("The directory connection is the next step. This screen is ready for it.");
+    setMessage("Staff sign-in will connect here. This page is ready for that step.");
   }
 
   return (

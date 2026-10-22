@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { history, integer, latest, money, percent, prior, type HistoryYear } from "@/lib/history";
 
 type Mode = "cycle" | "academic";
@@ -18,11 +18,32 @@ function labelFor(row: HistoryYear, mode: Mode) {
 
 export function HistoryDashboard() {
   const [mode, setMode] = useState<Mode>("cycle");
+  const [openHelp, setOpenHelp] = useState<string | null>(null);
   const labels = history.map((row) => labelFor(row, mode));
   const enrollmentDelta = delta(latest.enrollment, prior.enrollment);
   const partnerDelta = delta(latest.partners, prior.partners);
   const ventureDelta = delta(latest.ventureTests ?? 0, prior.ventureTests ?? 0);
   const awardDelta = delta(latest.scholarshipDollars, prior.scholarshipDollars);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpenHelp(null);
+    }
+    function onPointer(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(".help")) setOpenHelp(null);
+    }
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, []);
+
+  function toggleHelp(id: string) {
+    setOpenHelp((current) => (current === id ? null : id));
+  }
 
   const kpis = [
     {
@@ -30,58 +51,58 @@ export function HistoryDashboard() {
       value: integer(latest.enrollment),
       note: `${percent(latest.ugShare)} of undergraduates`,
       delta: enrollmentDelta.label,
-      help: "Undergraduates in a reported entrepreneurship course or experience, counted once. A student in two courses is still one student.",
+      help: "Undergraduates who took part in an entrepreneurship course or experience. Each student is counted once, even when they joined more than one.",
     },
     {
-      label: "Reporting partners",
+      label: "Partners",
       value: integer(latest.partners),
       note: `From ${history[0].partners} in ${history[0].academic}`,
       delta: partnerDelta.label,
-      help: "Colleges, schools, and units that sent undergraduate numbers for this rankings cycle. The directory names the units we have on file so far.",
+      help: "Colleges, schools, and units that contributed to this year’s undergraduate ranking. The Partners page names those confirmed so far.",
     },
     {
       label: "Majors represented",
       value: integer(latest.majors),
       note: `${integer(latest.departments)} faculty departments`,
       delta: delta(latest.majors, prior.majors).label,
-      help: "Distinct undergraduate majors among the enrolled students. Departments are the faculty homes that taught or sponsored the activity.",
+      help: "Distinct undergraduate majors among these students. Departments are the faculty homes that taught or sponsored the work.",
     },
     {
       label: "Venture tests",
       value: integer(latest.ventureTests ?? 0),
-      note: "Student venture testing",
+      note: "Tests of a venture assumption",
       delta: ventureDelta.label,
-      help: "Times students tested a venture assumption with a customer, user, or prototype. This series starts with the 2022 rankings file.",
+      help: "Occasions when students tested a venture assumption with a customer, user, or prototype. The series begins with the 2022 ranking.",
     },
     {
       label: "Prize money, cumulative",
       value: money(latest.prizeCumulative),
       note: `${money(latest.prize)} this year`,
       delta: "",
-      help: "Running total of student prize money since 2017–18. The card shows the total. The chart splits the year it was awarded from that running total.",
+      help: "Student prize money since 2017–18. This card is the running total. The chart shows each year’s awards beside that total.",
     },
     {
       label: "Grants and awards, cumulative",
       value: money(latest.scholarshipDollarsCumulative),
       note: `${integer(latest.scholarships)} awards · ${money(latest.scholarshipDollars)} this year`,
       delta: awardDelta.label,
-      help: "Scholarships and grants from any funding source. The change is this year’s dollars versus last year. The big number is every dollar since 2017–18.",
+      help: "Scholarships and grants from any source. The change compares this year’s dollars with last year. The figure is the total since 2017–18.",
     },
   ];
 
   return (
     <div className="dash">
       <section className="signature" aria-label="2025 to 2026 headline figures">
-        <p>Undergraduate file · 2025–26 · for the 2027 rankings cycle</p>
+        <p>Undergraduate ranking · 2025–26 · 2027 cycle</p>
         <div>
           <article><strong>{integer(latest.enrollment)}</strong><span>Enrollment</span></article>
           <article><strong>{percent(latest.ugShare)}</strong><span>Undergraduate share</span></article>
-          <article><strong>{integer(latest.partners)}</strong><span>Reporting partners</span></article>
+          <article><strong>{integer(latest.partners)}</strong><span>Partners</span></article>
           <article><strong>{money(latest.scholarshipDollarsCumulative)}</strong><span>Cumulative awards</span></article>
         </div>
       </section>
       <div className="dash-toolbar">
-        <p>Change on each card is versus the 2024–25 reporting year. Switch the axis between the rankings cycle and the academic year.</p>
+        <p>Each change is from 2024–25. Show the rankings year or the academic year.</p>
         <div className="segment" role="group" aria-label="Axis labels">
           <button type="button" aria-pressed={mode === "cycle"} className={mode === "cycle" ? "on" : ""} onClick={() => setMode("cycle")}>Rankings year</button>
           <button type="button" aria-pressed={mode === "academic"} className={mode === "academic" ? "on" : ""} onClick={() => setMode("academic")}>Academic year</button>
@@ -91,36 +112,38 @@ export function HistoryDashboard() {
       <div className="kpi-grid">
         {kpis.map((item) => (
           <article key={item.label}>
-            <p className="kpi-label">{item.label}</p>
+            <div className="kpi-top">
+              <p className="kpi-label">{item.label}</p>
+              <Explain id={helpId("kpi", item.label)} label={item.label} text={item.help} open={openHelp === helpId("kpi", item.label)} onToggle={toggleHelp} />
+            </div>
             <p className="kpi-value">{item.value}</p>
             <p className="kpi-note">
               <span>{item.note}</span>
               {item.delta ? <span className={item.delta.startsWith("-") ? "pill down" : "pill up"}>{item.delta}</span> : <span className="pill flat">Cumulative</span>}
             </p>
-            <p className="kpi-help">{item.help}</p>
           </article>
         ))}
       </div>
 
       <div className="chart-grid">
-        <Panel title="Enrollment" note="Bars are students, counted once. The line is that count as a percent of the undergraduate body. Left axis is students. Right axis is percent.">
+        <Panel title="Enrollment" note="Bars are students, counted once. The line is their share of the undergraduate student body. Left is students. Right is percent." openHelp={openHelp} onToggle={toggleHelp}>
           <ComboChart
             labels={labels}
             bars={{ name: "Students", values: history.map((row) => row.enrollment), format: integer, axis: compactCount }}
             line={{ name: "Share of undergraduates", values: history.map((row) => row.ugShare * 100), format: (value) => `${Math.round(value)}%`, axis: (value) => `${Math.round(value)}%` }}
           />
         </Panel>
-        <Panel title="Reporting partners" note="One count per rankings cycle: how many units sent undergraduate data. This is not a dollar figure and has no second axis.">
+        <Panel title="Partners" note="Campus partners contributing to the undergraduate ranking each year." openHelp={openHelp} onToggle={toggleHelp}>
           <BarChart labels={labels} name="Partners" values={history.map((row) => row.partners)} format={integer} />
         </Panel>
-        <Panel title="Reach across campus" note="Both lines use the same count axis. Navy is distinct majors. Orange is faculty departments. They are not percentages.">
+        <Panel title="Reach across campus" note="Navy is distinct majors. Orange is faculty departments. Both use the same count." openHelp={openHelp} onToggle={toggleHelp}>
           <DualLine
             labels={labels}
             a={{ name: "Majors", values: history.map((row) => row.majors), format: integer }}
             b={{ name: "Departments", values: history.map((row) => row.departments), format: integer }}
           />
         </Panel>
-        <Panel title="Student venture testing" note="Each bar is the number of venture tests reported that year. Empty years were not in the file. The series begins with the 2022 rankings cycle.">
+        <Panel title="Student venture testing" note="Venture tests each year. The series begins with the 2022 ranking." openHelp={openHelp} onToggle={toggleHelp}>
           <BarChart
             labels={labels}
             name="Venture tests"
@@ -128,14 +151,14 @@ export function HistoryDashboard() {
             format={(value) => integer(value)}
           />
         </Panel>
-        <Panel title="Student prize money" note="Bars are the dollars awarded that year. The line is the running total since 2017–18. Left axis is the year. Right axis is the cumulative total." wide>
+        <Panel title="Student prize money" note="Bars are dollars awarded that year. The line is the total since 2017–18. Left is the year. Right is the running total." wide openHelp={openHelp} onToggle={toggleHelp}>
           <ComboChart
             labels={labels}
             bars={{ name: "Awarded that year", values: history.map((row) => row.prize), format: money, axis: compactMoney }}
             line={{ name: "Running total", values: history.map((row) => row.prizeCumulative), format: money, axis: compactMoney }}
           />
         </Panel>
-        <Panel title="Student grants and awards" note="Bars are the number of scholarships and grants. The line is cumulative dollars since 2017–18. Left axis is a count. Right axis is dollars." wide>
+        <Panel title="Student grants and awards" note="Bars are the number of scholarships and grants. The line is total dollars since 2017–18. Left is awards. Right is dollars." wide openHelp={openHelp} onToggle={toggleHelp}>
           <ComboChart
             labels={labels}
             bars={{ name: "Awards that year", values: history.map((row) => row.scholarships), format: integer, axis: compactCount }}
@@ -145,7 +168,7 @@ export function HistoryDashboard() {
       </div>
 
       <section className="table-wrap">
-        <h2>Reporting file</h2>
+        <h2>Year by year</h2>
         <div className="table-scroll">
           <table>
             <thead>
@@ -191,13 +214,35 @@ export function HistoryDashboard() {
   );
 }
 
-function Panel({ title, note, children, wide = false }: { title: string; note: string; children: ReactNode; wide?: boolean }) {
+function Panel({ title, note, children, wide = false, openHelp, onToggle }: { title: string; note: string; children: ReactNode; wide?: boolean; openHelp: string | null; onToggle: (id: string) => void }) {
+  const id = helpId("chart", title);
   return (
     <section className={wide ? "panel wide" : "panel"}>
-      <h2>{title}</h2>
-      <p>{note}</p>
+      <div className="panel-head">
+        <h2>{title}</h2>
+        <Explain id={id} label={title} text={note} open={openHelp === id} onToggle={onToggle} />
+      </div>
       {children}
     </section>
+  );
+}
+
+function helpId(prefix: string, label: string) {
+  return `${prefix}-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+function Explain({ id, label, text, open, onToggle }: { id: string; label: string; text: string; open: boolean; onToggle: (id: string) => void }) {
+  return (
+    <span className="help">
+      <button type="button" className="help-btn" aria-expanded={open} aria-controls={open ? id : undefined} aria-label={`Explain ${label}`} onClick={() => onToggle(id)}>
+        ?
+      </button>
+      {open ? (
+        <span className="help-pop" id={id} role="note">
+          {text}
+        </span>
+      ) : null}
+    </span>
   );
 }
 

@@ -18,7 +18,7 @@ export const colleges: College[] = [
       {
         name: "Center for Entrepreneurship",
         aka: "CFE",
-        note: "Coordinates the reporting partners and compiles the undergraduate file submitted to the Princeton Review.",
+        note: "Coordinates the campus partners and prepares Michigan’s undergraduate Princeton Review ranking.",
       },
       {
         name: "Center for Socially Engaged Design",
@@ -34,7 +34,7 @@ export const colleges: College[] = [
     id: "ross",
     name: "Stephen M. Ross School of Business",
     units: [
-      { name: "Zell Lurie Institute for Entrepreneurship" },
+      { name: "Zell Lurie Institute for Entrepreneurship", note: "Prepares Michigan’s graduate entrepreneurship rankings. Grants, mentors, and accelerators for student ventures." },
       { name: "Business + Tech" },
       { name: "Business + Impact", note: "Includes DNEP and Impact Studio." },
     ],

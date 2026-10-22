@@ -12,7 +12,7 @@ export default function LoginPage() {
       <section className="login-card">
         <p className="eyebrow">Entrepreneurship &amp; Innovation</p>
         <h1>Log in</h1>
-        <p className="quiet">Staff and reporting partners.</p>
+        <p className="quiet">For staff who submit the annual figures.</p>
         <LoginForm />
       </section>
     </article>

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { history, integer, latest, percent } from "@/lib/history";
 
 const activities = [
-  { name: "Entrepreneurship Minor and ENTR courses", note: "Open to every school. This is the coursework inside the undergraduate file.", href: "/partners#university" },
-  { name: "Zell Lurie Institute", note: "Ross grants, mentors, and accelerators for student ventures.", href: "/partners#ross" },
+  { name: "Entrepreneurship Minor and ENTR courses", note: "Open to students in every school and college.", href: "/partners#university" },
+  { name: "Zell Lurie Institute", note: "Ross grants, mentors, and accelerators. The Institute prepares the graduate rankings.", href: "/partners#ross" },
   { name: "Business + Tech and Business + Impact", note: "Competitions, Impact Studio, and DNEP.", href: "/partners#ross" },
-  { name: "Center for Entrepreneurship", note: "ELP, EHour, I-Corps, and the TechLabs. CFE also compiles this file.", href: "/partners#engineering" },
+  { name: "Center for Entrepreneurship", note: "ELP, EHour, I-Corps, and the TechLabs. Coordinates the undergraduate ranking.", href: "/partners#engineering" },
   { name: "optiMize", note: "LSA’s social innovation challenge and student community.", href: "/partners#lsa" },
   { name: "EXCEL Lab", note: "Venture and career support in Music, Theatre & Dance.", href: "/partners#smtd" },
   { name: "Center for Socially Engaged Design", note: "Includes Innovation in Action.", href: "/partners#engineering" },
@@ -21,7 +21,7 @@ export default function HomePage() {
         <p className="eyebrow">Princeton Review · Entrepreneur · 2026</p>
         <h1>Undergraduate overview</h1>
         <p className="brief-lede">
-          The University of Michigan’s undergraduate entrepreneurship submission. The Center for Entrepreneurship collects it from the reporting partners. Graduate rankings are a separate list and are not in this file.
+          Michigan’s undergraduate entrepreneurship ranking, prepared with the campus partners and coordinated by the Center for Entrepreneurship. Graduate rankings are prepared by the Zell Lurie Institute.
         </p>
         <div className="stat-band" aria-label="2026 undergraduate placement">
           <article>
@@ -34,15 +34,15 @@ export default function HomePage() {
           </article>
           <article>
             <strong>{integer(latest.enrollment)}</strong>
-            <span>Students in the {latest.academic} file</span>
+            <span>Undergraduates reached, {latest.academic}</span>
           </article>
           <article>
             <strong>{percent(latest.ugShare)}</strong>
-            <span>Of undergraduates, counted once</span>
+            <span>Share of the undergraduate student body</span>
           </article>
         </div>
         <p className="fine">
-          The 2025 undergraduate list was No. 6. The 2026 lists were announced November 12, 2025. {integer(latest.partners)} partners reported for the {latest.cycle} cycle.
+          In 2025, the undergraduate ranking was No. 6. The 2026 rankings were announced November 12, 2025. {integer(latest.partners)} partners contributed to the {latest.cycle} ranking.
         </p>
         <div className="hero-actions">
           <Link className="btn-solid" href="/historical-data">Historical data</Link>
@@ -53,7 +53,7 @@ export default function HomePage() {
       <section className="home-block">
         <div className="block-head">
           <h2>Partners, year over year</h2>
-          <p>How many units submitted undergraduate data for each rankings cycle. Names and colleges are on the partners page.</p>
+          <p>Campus partners contributing to the undergraduate ranking, by year. Colleges and units are listed on the Partners page.</p>
         </div>
         <svg className="yoy" viewBox="0 0 720 220" role="img" aria-label="Reporting partners by rankings year">
           {history.map((row, index) => {
@@ -72,13 +72,13 @@ export default function HomePage() {
             );
           })}
         </svg>
-        <p className="fine">From {history[0].partners} partners in {history[0].academic} to {latest.partners} in {latest.academic}. The maize bar is the current file.</p>
+        <p className="fine">{history[0].partners} partners in {history[0].academic}. {latest.partners} in {latest.academic}. Maize marks the current year.</p>
       </section>
 
       <section className="home-block activities">
         <div className="block-head">
           <h2>What is happening at Michigan</h2>
-          <p>A short map of the ecosystem behind the file. Detail on each unit lives with the partners.</p>
+          <p>Entrepreneurship and innovation across the colleges and schools. Each partner is described in the directory.</p>
         </div>
         <div className="activity-grid">
           {activities.map((item) => (

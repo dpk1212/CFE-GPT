@@ -4,7 +4,7 @@ import { colleges, unitCount } from "@/lib/partners";
 
 export const metadata: Metadata = {
   title: "Partners",
-  description: "University of Michigan colleges and units in the undergraduate entrepreneurship reporting file.",
+  description: "Colleges, schools, and units in University of Michigan Entrepreneurship & Innovation.",
 };
 
 export default function PartnersPage() {
@@ -13,11 +13,11 @@ export default function PartnersPage() {
       <header className="page-hero">
         <span className="tick" aria-hidden />
         <h1>Partners</h1>
-        <p>Departments and units inside the colleges. Undergraduate reporting only.</p>
+        <p>The colleges, schools, and units of Entrepreneurship &amp; Innovation at Michigan.</p>
       </header>
       <section className="sheet">
         <p className="directory-note">
-          {unitCount} named units across {colleges.length} groups. The {latest.academic} Princeton Review file counted {integer(latest.partners)} reporting partners. This directory is the working list, not a claim that every historical partner is named yet.
+          {unitCount} units are named here, across {colleges.length} groups. {integer(latest.partners)} partners contributed to the {latest.academic} undergraduate ranking. The directory will grow as additional partners are confirmed.
         </p>
         {colleges.map((college) => (
           <section key={college.id} id={college.id} className="college">
@@ -29,7 +29,7 @@ export default function PartnersPage() {
                     <strong>{unit.name}</strong>
                     {unit.aka ? <span className="aka">{unit.aka}</span> : null}
                   </div>
-                  {unit.note ? <p>{unit.note}</p> : <p className="quiet">Reporting unit</p>}
+                  {unit.note ? <p>{unit.note}</p> : null}
                 </li>
               ))}
             </ul>
