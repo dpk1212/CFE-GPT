@@ -36,7 +36,7 @@ export function HistoryDashboard() {
   return (
     <div className="dash">
       <section className="signature" aria-label="2025 to 2026 headline figures">
-        <p>2025–26 file · 2027 rankings cycle</p>
+        <p>Undergraduate file · 2025–26 · for the 2027 rankings cycle</p>
         <div>
           <article><strong>{integer(latest.enrollment)}</strong><span>Enrollment</span></article>
           <article><strong>{percent(latest.ugShare)}</strong><span>Undergraduate share</span></article>

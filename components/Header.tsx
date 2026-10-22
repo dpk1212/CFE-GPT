@@ -21,8 +21,11 @@ export function Header() {
   return (
     <header className="nav">
       <div className="nav-inner">
-        <Link href="/" className="brand" aria-label="CFE home">
-          <img src="/cfe-logo.png" alt="CFE" width={168} height={48} />
+        <Link href="/" className="brand" aria-label="University of Michigan Entrepreneurship + Innovation home">
+          <span className="brand-uni">University of Michigan</span>
+          <span className="brand-name">
+            Entrepreneurship <em>+</em> Innovation
+          </span>
         </Link>
         <button className="nav-toggle" type="button" aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((value) => !value)}>
           {open ? "Close" : "Menu"}

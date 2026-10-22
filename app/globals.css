@@ -49,8 +49,10 @@ img { display: block; max-width: 100%; }
   align-items: center;
   gap: 1.5rem;
 }
-.brand { display: flex; align-items: center; text-decoration: none; }
-.brand img { width: 168px; height: auto; }
+.brand { display: grid; gap: 0.12rem; text-decoration: none; color: white; min-width: 0; }
+.brand-uni { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--maize); font-weight: 700; }
+.brand-name { font-family: var(--font-serif), Georgia, serif; font-size: 1.28rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1; text-transform: none; }
+.brand-name em { font-style: normal; color: var(--maize); }
 .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem; }
 .nav-links a {
   color: white;
@@ -64,6 +66,75 @@ img { display: block; max-width: 100%; }
 }
 .nav-links a[aria-current="page"] { color: var(--maize); border-bottom-color: var(--maize); }
 .nav-toggle { display: none; margin-left: auto; background: transparent; color: var(--maize); border: 1px solid var(--maize); padding: 0.4rem 0.7rem; }
+
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.75fr);
+  gap: 3.5rem;
+  align-items: end;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 4.8rem 1.5rem 3.5rem;
+}
+.home-hero .hero-kicker { color: var(--blue); }
+.home-hero h1 {
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: -0.04em;
+  font-size: clamp(3.8rem, 6.6vw, 6.15rem);
+  line-height: 0.9;
+  color: var(--blue);
+  margin: 0 0 1.15rem;
+}
+.home-lede { max-width: 38rem; font-size: 1.16rem; line-height: 1.5; color: #243246; margin: 0 0 1.6rem; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; }
+.btn-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.8rem;
+  padding: 0 1rem;
+  border: 1px solid var(--blue);
+  color: var(--blue);
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+.btn-line:hover { background: var(--blue); color: white; }
+.role-card { background: #f4f6f8; border-top: 3px solid var(--maize); padding: 1.15rem 1.15rem 0.35rem; }
+.role-card > p { margin: 0 0 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.72rem; font-weight: 700; color: var(--blue); }
+.role-card dl { margin: 0; }
+.role-card div { display: grid; grid-template-columns: 8.2rem 1fr; gap: 0.75rem; padding: 0.72rem 0; border-top: 1px solid var(--line); }
+.role-card dt { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.role-card dd { margin: 0; font-weight: 600; }
+.stat-band { background: var(--blue); color: white; display: grid; grid-template-columns: repeat(4, 1fr); }
+.stat-band article { padding: 1.55rem 1.5rem 1.45rem; border-left: 1px solid rgba(255,255,255,0.14); }
+.stat-band article:first-child { border-left: 0; }
+.stat-band strong { display: block; font-family: var(--display); font-weight: 600; font-size: clamp(2.3rem, 3vw, 3.1rem); letter-spacing: 0; text-transform: none; line-height: 0.95; color: var(--maize); }
+.stat-band span { display: block; margin-top: 0.45rem; color: rgba(255,255,255,0.78); font-size: 0.9rem; max-width: 16rem; }
+.home-directory { max-width: 1180px; margin: 0 auto; padding: 3.6rem 1.5rem 4.6rem; }
+.directory-head { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 2.5rem; align-items: end; margin-bottom: 0.4rem; }
+.directory-head h2 { font-family: var(--font-serif), Georgia, serif; text-transform: none; letter-spacing: -0.03em; font-weight: 500; font-size: clamp(2.2rem, 4vw, 3.3rem); line-height: 1; color: var(--blue); margin: 0; }
+.directory-head p, .directory-note { margin: 0; color: #243246; }
+.hero-kicker.dark { color: var(--blue); margin-bottom: 0.45rem; }
+.college-index { display: grid; grid-template-columns: 1fr 1fr; column-gap: 2.5rem; }
+.college-index a { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; text-decoration: none; padding: 0.95rem 0; border-top: 1px solid var(--line); font-weight: 600; }
+.college-index a:hover { color: var(--blue); }
+.college-index em { font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
+.directory-note { max-width: 46rem; margin-bottom: 0.5rem; }
+.college { margin: 2.1rem 0 0; scroll-margin-top: 108px; }
+.college h2 { font-size: 1.35rem; color: var(--blue); border-bottom: 2px solid var(--blue); padding-bottom: 0.4rem; }
+.college ul { list-style: none; margin: 0; padding: 0; }
+.college li { display: grid; grid-template-columns: minmax(240px, 0.85fr) 1.15fr; gap: 1.4rem; padding: 0.95rem 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.college strong { font-family: var(--sans); font-weight: 700; letter-spacing: 0; text-transform: none; font-size: 1.02rem; }
+.college li p { margin: 0; }
+.aka { margin-left: 0.5rem; color: var(--muted); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+.footer-grid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr 0.8fr; gap: 2rem; }
+.footer-kicker { margin: 0 0 0.4rem; color: var(--maize); letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.72rem; font-weight: 700; }
+.footer-name { font-family: var(--font-serif), Georgia, serif; text-transform: none; letter-spacing: -0.02em; font-size: 1.7rem; font-weight: 500; }
 
 .hero-brand {
   background:
@@ -166,14 +237,18 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
 .btn-solid:hover { background: #00386e; }
 .form-note { color: var(--muted); margin: 0; }
 
-.footer { background: var(--blue); color: rgba(255,255,255,0.86); padding: 2rem 7vw 2.4rem; }
+.page-hero h1 { font-family: var(--font-serif), Georgia, serif; text-transform: none; letter-spacing: -0.035em; font-weight: 500; }
+.college h2 { text-transform: none; font-family: var(--sans); letter-spacing: -0.015em; font-weight: 700; }
+.footer { background: var(--blue); color: rgba(255,255,255,0.86); padding: 2.4rem 1.5rem 2.6rem; }
 .footer-inner { max-width: 1180px; }
 .footer-name { color: white; font-family: var(--display); font-size: 1.6rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 0.4rem; }
 .footer a { color: var(--maize); }
 .footer p { margin: 0.25rem 0; }
 
 @media (max-width: 900px) {
-  .kpi-grid, .chart-grid, .partner-lead, .partner-list, .proof, .signature > div { grid-template-columns: 1fr 1fr; }
+  .kpi-grid, .chart-grid, .partner-lead, .partner-list, .proof, .signature > div, .home-hero, .stat-band, .directory-head, .college-index, .footer-grid, .college li { grid-template-columns: 1fr; }
+  .stat-band article { border-left: 0; border-top: 1px solid rgba(255,255,255,0.14); }
+  .home-hero { padding: 2.6rem 1.25rem 2rem; display: grid; }
   .proof a { border-right: 0; border-bottom: 1px solid var(--line); padding-right: 0; }
   .signature article { border-left: 0; padding-left: 0; border-top: 1px solid rgba(255,255,255,0.18); padding-top: 0.7rem; }
   .panel.wide { grid-column: auto; }

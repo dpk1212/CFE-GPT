@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Barlow, Barlow_Condensed } from "next/font/google";
+import { Barlow, Barlow_Condensed, Fraunces } from "next/font/google";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { center } from "@/lib/content";
@@ -17,21 +17,28 @@ const sans = Barlow({
   variable: "--font-sans",
 });
 
+const serif = Fraunces({
+  weight: ["500", "600"],
+  subsets: ["latin"],
+  variable: "--font-serif",
+});
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "CFE | Center for Entrepreneurship",
-    template: "%s | CFE",
+    default: "Entrepreneurship + Innovation | University of Michigan",
+    template: "%s | Entrepreneurship + Innovation",
   },
-  description: "Center for Entrepreneurship at the University of Michigan. Learn. Launch. Lead.",
+  description:
+    "University of Michigan Entrepreneurship + Innovation. Undergraduate Princeton Review reporting, coordinated by the Center for Entrepreneurship.",
   openGraph: {
-    title: "CFE | Center for Entrepreneurship",
-    description: "Learn. Launch. Lead. Historical reporting for the University of Michigan Center for Entrepreneurship.",
+    title: "Entrepreneurship + Innovation | University of Michigan",
+    description: "The undergraduate reporting record for Michigan’s entrepreneurship ecosystem.",
     type: "website",
     locale: "en_US",
-    siteName: "U-M Center for Entrepreneurship",
+    siteName: "U-M Entrepreneurship + Innovation",
   },
 };
 
@@ -39,9 +46,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
-    name: center.name,
-    parentOrganization: center.university,
-    url: center.official,
+    name: "Entrepreneurship + Innovation",
+    parentOrganization: "University of Michigan",
+    url: "https://entrepreneurship.umich.edu/",
     email: center.email,
     telephone: center.phone,
     address: {
@@ -55,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   };
 
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable}`}>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${serif.variable}`}>
       <body>
         <a className="skip" href="#content">
           Skip to content

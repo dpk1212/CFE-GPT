@@ -3,7 +3,7 @@ import { HistoryDashboard } from "@/components/HistoryDashboard";
 
 export const metadata: Metadata = {
   title: "Historical Data",
-  description: "Princeton Review reporting series for the University of Michigan Center for Entrepreneurship.",
+  description: "Undergraduate Princeton Review reporting series for University of Michigan Entrepreneurship + Innovation.",
 };
 
 export default function HistoricalDataPage() {
@@ -12,7 +12,7 @@ export default function HistoricalDataPage() {
       <header className="page-hero">
         <span className="tick" aria-hidden />
         <h1>Historical data</h1>
-        <p>Nine reporting years. Enrollment, campus reach, venture testing, and student funding.</p>
+        <p>Undergraduate file only. Nine years, compiled by the Center for Entrepreneurship.</p>
       </header>
       <HistoryDashboard />
     </article>

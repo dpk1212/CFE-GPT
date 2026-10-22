@@ -1,24 +1,36 @@
-import { center } from "@/lib/content";
-
 export function Footer() {
   return (
     <footer className="footer">
-      <div className="footer-inner">
-        <p className="footer-name">Center for Entrepreneurship</p>
-        <p>
-          {center.address}
-          <br />
-          {center.city}
-        </p>
-        <p>
-          <a href={center.phoneHref}>{center.phone}</a>
-          <span> · </span>
-          <a href={`mailto:${center.email}`}>{center.email}</a>
-        </p>
-        <p>{center.hours}</p>
-        <p>
-          <a href={center.official}>cfe.umich.edu</a>
-        </p>
+      <div className="footer-grid">
+        <div>
+          <p className="footer-kicker">University of Michigan</p>
+          <p className="footer-name">Entrepreneurship + Innovation</p>
+          <p>Undergraduate Princeton Review reporting is coordinated by the Center for Entrepreneurship.</p>
+        </div>
+        <div>
+          <p className="footer-kicker">Reporting desk</p>
+          <p>
+            3350 Duderstadt Center
+            <br />
+            2281 Bonisteel Boulevard
+            <br />
+            Ann Arbor, MI 48109
+          </p>
+          <p>
+            <a href="tel:+17347631021">734-763-1021</a>
+            <span> · </span>
+            <a href="mailto:entrepreneurship@umich.edu">entrepreneurship@umich.edu</a>
+          </p>
+        </div>
+        <div>
+          <p className="footer-kicker">Official homes</p>
+          <p>
+            <a href="https://entrepreneurship.umich.edu/">entrepreneurship.umich.edu</a>
+          </p>
+          <p>
+            <a href="https://cfe.umich.edu/">cfe.umich.edu</a>
+          </p>
+        </div>
       </div>
     </footer>
   );

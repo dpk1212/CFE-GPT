@@ -19,9 +19,9 @@ export default function OpenGraphImage() {
           fontFamily: "Georgia, serif",
         }}
       >
-        <div style={{ display: "flex", fontSize: 28, letterSpacing: 6, color: "#FFCB05" }}>CFE</div>
-        <div style={{ display: "flex", fontSize: 76, lineHeight: 1 }}>LEARN. LAUNCH. LEAD.</div>
-        <div style={{ display: "flex", fontSize: 28 }}>CENTER FOR ENTREPRENEURSHIP</div>
+        <div style={{ display: "flex", fontSize: 24, letterSpacing: 4, color: "#FFCB05" }}>UNIVERSITY OF MICHIGAN</div>
+        <div style={{ display: "flex", fontSize: 68, lineHeight: 1.05 }}>Entrepreneurship + Innovation</div>
+        <div style={{ display: "flex", fontSize: 28 }}>Undergraduate reporting</div>
       </div>
     ),
     size,

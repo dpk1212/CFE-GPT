@@ -1,45 +1,84 @@
 import Link from "next/link";
-import { integer, latest, money, percent } from "@/lib/history";
+import { integer, latest, percent } from "@/lib/history";
+import { colleges, unitCount } from "@/lib/partners";
 
 export default function HomePage() {
   return (
     <>
-      <section className="hero-brand">
-        <div className="hero-copy">
-          <span className="tick" aria-hidden />
-          <p className="hero-kicker">University of Michigan</p>
-          <h1>Learn. Launch. Lead.</h1>
-          <p className="hero-line">Look to Michigan for entrepreneurship</p>
+      <section className="home-hero">
+        <div className="home-hero-copy">
+          <p className="hero-kicker">Undergraduate ecosystem</p>
+          <h1>
+            Entrepreneurship
+            <span> + Innovation</span>
+          </h1>
+          <p className="home-lede">
+            Michigan’s campus-wide entrepreneurship network. This site is the undergraduate reporting record: who participates, and the file the Center for Entrepreneurship submits to the Princeton Review.
+          </p>
+          <div className="hero-actions">
+            <Link className="btn-solid" href="/historical-data">Undergraduate data</Link>
+            <Link className="btn-line" href="/partners">Reporting partners</Link>
+          </div>
         </div>
-        <svg className="stripes" viewBox="0 0 640 420" aria-hidden>
-          <line x1="90" y1="400" x2="280" y2="10" stroke="#FFCB05" strokeWidth="3" />
-          <line x1="190" y1="420" x2="380" y2="20" stroke="#F15A24" strokeWidth="3" />
-          <line x1="280" y1="400" x2="460" y2="50" stroke="rgba(255,255,255,0.85)" strokeWidth="2" />
-          <line x1="370" y1="420" x2="560" y2="20" stroke="#FFCB05" strokeWidth="3" />
-        </svg>
+        <aside className="role-card">
+          <p>Scope of this record</p>
+          <dl>
+            <div>
+              <dt>Whose ecosystem</dt>
+              <dd>University of Michigan</dd>
+            </div>
+            <div>
+              <dt>Who reports it</dt>
+              <dd>Center for Entrepreneurship</dd>
+            </div>
+            <div>
+              <dt>What is in the file</dt>
+              <dd>Undergraduates only</dd>
+            </div>
+            <div>
+              <dt>Latest year</dt>
+              <dd>{latest.academic} for the {latest.cycle} cycle</dd>
+            </div>
+          </dl>
+        </aside>
       </section>
-      <section className="home-intro">
-        <h2>We are the CFE</h2>
-        <p>
-          The Center for Entrepreneurship is open to every school and college, from the first undergraduate course through the PhD. Since 2008, the work has been courses, practice, and a path into the venture.
-        </p>
-        <div className="proof">
-          <Link href="/historical-data">
-            <strong>{integer(latest.enrollment)}</strong>
-            <span>Students in {latest.academic}</span>
-          </Link>
-          <Link href="/historical-data">
-            <strong>{percent(latest.ugShare)}</strong>
-            <span>Of the undergraduate body</span>
-          </Link>
-          <Link href="/partners">
-            <strong>{integer(latest.partners)}</strong>
-            <span>Reporting partners</span>
-          </Link>
-          <Link href="/historical-data">
-            <strong>{money(latest.scholarshipDollarsCumulative)}</strong>
-            <span>Cumulative student awards</span>
-          </Link>
+
+      <section className="stat-band" aria-label="Latest undergraduate figures">
+        <article>
+          <strong>No. 4</strong>
+          <span>Undergraduate, national, 2026</span>
+        </article>
+        <article>
+          <strong>No. 1</strong>
+          <span>Undergraduate, Midwest, 2026</span>
+        </article>
+        <article>
+          <strong>{integer(latest.enrollment)}</strong>
+          <span>Undergraduates in the {latest.academic} file</span>
+        </article>
+        <article>
+          <strong>{percent(latest.ugShare)}</strong>
+          <span>Of the undergraduate body, deduped</span>
+        </article>
+      </section>
+
+      <section className="home-directory">
+        <div className="directory-head">
+          <div>
+            <p className="hero-kicker dark">Partners</p>
+            <h2>{unitCount} units, grouped by college.</h2>
+          </div>
+          <p>
+            The {latest.academic} file counted {integer(latest.partners)} reporting partners. The directory below is the named set so far. More units can be added without changing the historical counts.
+          </p>
+        </div>
+        <div className="college-index">
+          {colleges.map((college) => (
+            <Link key={college.id} href={`/partners#${college.id}`}>
+              <span>{college.name}</span>
+              <em>{college.units.length}</em>
+            </Link>
+          ))}
         </div>
       </section>
     </>
