@@ -25,12 +25,48 @@ export function HistoryDashboard() {
   const awardDelta = delta(latest.scholarshipDollars, prior.scholarshipDollars);
 
   const kpis = [
-    { label: "Enrollment", value: integer(latest.enrollment), note: `${percent(latest.ugShare)} of undergraduates`, delta: enrollmentDelta.label },
-    { label: "Reporting partners", value: integer(latest.partners), note: `From ${history[0].partners} in ${history[0].academic}`, delta: partnerDelta.label },
-    { label: "Majors represented", value: integer(latest.majors), note: `${integer(latest.departments)} faculty departments`, delta: delta(latest.majors, prior.majors).label },
-    { label: "Venture tests", value: integer(latest.ventureTests ?? 0), note: "Student venture testing", delta: ventureDelta.label },
-    { label: "Prize money, cumulative", value: money(latest.prizeCumulative), note: `${money(latest.prize)} this year`, delta: "" },
-    { label: "Grants and awards, cumulative", value: money(latest.scholarshipDollarsCumulative), note: `${integer(latest.scholarships)} awards · ${money(latest.scholarshipDollars)} this year`, delta: awardDelta.label },
+    {
+      label: "Enrollment",
+      value: integer(latest.enrollment),
+      note: `${percent(latest.ugShare)} of undergraduates`,
+      delta: enrollmentDelta.label,
+      help: "Undergraduates in a reported entrepreneurship course or experience, counted once. A student in two courses is still one student.",
+    },
+    {
+      label: "Reporting partners",
+      value: integer(latest.partners),
+      note: `From ${history[0].partners} in ${history[0].academic}`,
+      delta: partnerDelta.label,
+      help: "Colleges, schools, and units that sent undergraduate numbers for this rankings cycle. The directory names the units we have on file so far.",
+    },
+    {
+      label: "Majors represented",
+      value: integer(latest.majors),
+      note: `${integer(latest.departments)} faculty departments`,
+      delta: delta(latest.majors, prior.majors).label,
+      help: "Distinct undergraduate majors among the enrolled students. Departments are the faculty homes that taught or sponsored the activity.",
+    },
+    {
+      label: "Venture tests",
+      value: integer(latest.ventureTests ?? 0),
+      note: "Student venture testing",
+      delta: ventureDelta.label,
+      help: "Times students tested a venture assumption with a customer, user, or prototype. This series starts with the 2022 rankings file.",
+    },
+    {
+      label: "Prize money, cumulative",
+      value: money(latest.prizeCumulative),
+      note: `${money(latest.prize)} this year`,
+      delta: "",
+      help: "Running total of student prize money since 2017–18. The card shows the total. The chart splits the year it was awarded from that running total.",
+    },
+    {
+      label: "Grants and awards, cumulative",
+      value: money(latest.scholarshipDollarsCumulative),
+      note: `${integer(latest.scholarships)} awards · ${money(latest.scholarshipDollars)} this year`,
+      delta: awardDelta.label,
+      help: "Scholarships and grants from any funding source. The change is this year’s dollars versus last year. The big number is every dollar since 2017–18.",
+    },
   ];
 
   return (
@@ -61,29 +97,30 @@ export function HistoryDashboard() {
               <span>{item.note}</span>
               {item.delta ? <span className={item.delta.startsWith("-") ? "pill down" : "pill up"}>{item.delta}</span> : <span className="pill flat">Cumulative</span>}
             </p>
+            <p className="kpi-help">{item.help}</p>
           </article>
         ))}
       </div>
 
       <div className="chart-grid">
-        <Panel title="Enrollment" note="Headcount, deduped, and share of the undergraduate student body.">
+        <Panel title="Enrollment" note="Bars are students, counted once. The line is that count as a percent of the undergraduate body. Left axis is students. Right axis is percent.">
           <ComboChart
             labels={labels}
-            bars={{ name: "Enrollment", values: history.map((row) => row.enrollment), format: integer }}
-            line={{ name: "Share of undergraduates", values: history.map((row) => row.ugShare * 100), format: (value) => `${Math.round(value)}%` }}
+            bars={{ name: "Students", values: history.map((row) => row.enrollment), format: integer, axis: compactCount }}
+            line={{ name: "Share of undergraduates", values: history.map((row) => row.ugShare * 100), format: (value) => `${Math.round(value)}%`, axis: (value) => `${Math.round(value)}%` }}
           />
         </Panel>
-        <Panel title="Reporting partners" note="Number of partners included in that rankings file.">
+        <Panel title="Reporting partners" note="One count per rankings cycle: how many units sent undergraduate data. This is not a dollar figure and has no second axis.">
           <BarChart labels={labels} name="Partners" values={history.map((row) => row.partners)} format={integer} />
         </Panel>
-        <Panel title="Reach across campus" note="Distinct majors and faculty departments in the reporting year.">
+        <Panel title="Reach across campus" note="Both lines use the same count axis. Navy is distinct majors. Orange is faculty departments. They are not percentages.">
           <DualLine
             labels={labels}
             a={{ name: "Majors", values: history.map((row) => row.majors), format: integer }}
             b={{ name: "Departments", values: history.map((row) => row.departments), format: integer }}
           />
         </Panel>
-        <Panel title="Student venture testing" note="Series begins with the 2022 rankings file. Earlier years were not reported in this extract.">
+        <Panel title="Student venture testing" note="Each bar is the number of venture tests reported that year. Empty years were not in the file. The series begins with the 2022 rankings cycle.">
           <BarChart
             labels={labels}
             name="Venture tests"
@@ -91,18 +128,18 @@ export function HistoryDashboard() {
             format={(value) => integer(value)}
           />
         </Panel>
-        <Panel title="Student prize money" note="Annual awards as bars. The line is the running total from 2017–18." wide>
+        <Panel title="Student prize money" note="Bars are the dollars awarded that year. The line is the running total since 2017–18. Left axis is the year. Right axis is the cumulative total." wide>
           <ComboChart
             labels={labels}
-            bars={{ name: "Awarded that year", values: history.map((row) => row.prize), format: money }}
-            line={{ name: "Cumulative", values: history.map((row) => row.prizeCumulative), format: money }}
+            bars={{ name: "Awarded that year", values: history.map((row) => row.prize), format: money, axis: compactMoney }}
+            line={{ name: "Running total", values: history.map((row) => row.prizeCumulative), format: money, axis: compactMoney }}
           />
         </Panel>
-        <Panel title="Student grants and awards" note="Count of scholarships and grants, with cumulative dollars since 2017–18." wide>
+        <Panel title="Student grants and awards" note="Bars are the number of scholarships and grants. The line is cumulative dollars since 2017–18. Left axis is a count. Right axis is dollars." wide>
           <ComboChart
             labels={labels}
-            bars={{ name: "Awards", values: history.map((row) => row.scholarships), format: integer }}
-            line={{ name: "Cumulative dollars", values: history.map((row) => row.scholarshipDollarsCumulative), format: money }}
+            bars={{ name: "Awards that year", values: history.map((row) => row.scholarships), format: integer, axis: compactCount }}
+            line={{ name: "Cumulative dollars", values: history.map((row) => row.scholarshipDollarsCumulative), format: money, axis: compactMoney }}
           />
         </Panel>
       </div>
@@ -164,7 +201,18 @@ function Panel({ title, note, children, wide = false }: { title: string; note: s
   );
 }
 
-type Series = { name: string; values: Array<number | null>; format: (value: number) => string };
+type Series = { name: string; values: Array<number | null>; format: (value: number) => string; axis?: (value: number) => string };
+
+function compactCount(value: number) {
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+  return `${Math.round(value)}`;
+}
+
+function compactMoney(value: number) {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1000) return `$${Math.round(value / 1000)}k`;
+  return `$${Math.round(value)}`;
+}
 
 function BarChart({ labels, name, values, format }: { labels: string[]; name: string; values: Array<number | null>; format: (value: number) => string }) {
   return <ComboChart labels={labels} bars={{ name, values, format }} />;
@@ -173,14 +221,16 @@ function BarChart({ labels, name, values, format }: { labels: string[]; name: st
 function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; line?: Series }) {
   const [active, setActive] = useState<number | null>(null);
   const width = 720;
-  const height = 250;
-  const pad = { l: 44, r: line ? 52 : 16, t: 16, b: 32 };
+  const height = 280;
+  const pad = { l: 58, r: line ? 64 : 18, t: 28, b: 36 };
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
   const barValues = bars.values.map((value) => value ?? 0);
   const barMax = Math.max(...barValues, 1);
   const lineMax = line ? Math.max(...line.values.map((value) => value ?? 0), 1) : 1;
   const slot = innerW / labels.length;
+  const leftTick = bars.axis ?? ((value: number) => bars.format(Math.round(value)));
+  const rightTick = line ? (line.axis ?? ((value: number) => line.format(Math.round(value)))) : undefined;
 
   const linePath = useMemo(() => {
     if (!line) return "";
@@ -198,9 +248,17 @@ function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; li
   return (
     <div className="chart">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={bars.name}>
+        <text x={pad.l} y={16} className="axis-title">{bars.name}</text>
+        {line ? <text x={width - pad.r} y={16} textAnchor="end" className="axis-title right">{line.name}</text> : null}
         {[0, 0.5, 1].map((step) => {
           const y = pad.t + innerH - step * innerH;
-          return <line key={step} x1={pad.l} x2={width - pad.r} y1={y} y2={y} className="grid" />;
+          return (
+            <g key={step}>
+              <line x1={pad.l} x2={width - pad.r} y1={y} y2={y} className="grid" />
+              <text x={pad.l - 8} y={y + 4} textAnchor="end" className="axis">{leftTick(barMax * step)}</text>
+              {line && rightTick ? <text x={width - pad.r + 8} y={y + 4} className="axis right">{rightTick(lineMax * step)}</text> : null}
+            </g>
+          );
         })}
         {bars.values.map((value, index) => {
           const amount = value ?? 0;
@@ -236,8 +294,8 @@ function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; li
         ))}
       </svg>
       <div className="legend">
-        <span><i className="swatch navy" /> {bars.name}</span>
-        {line ? <span><i className="swatch orange" /> {line.name}</span> : null}
+        <span><i className="swatch navy" /> Left · {bars.name}</span>
+        {line ? <span><i className="swatch orange" /> Right · {line.name}</span> : null}
         {active != null && bars.values[active] != null ? (
           <strong>
             {labels[active]} · {bars.format(bars.values[active] as number)}
@@ -252,8 +310,8 @@ function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; li
 function DualLine({ labels, a, b }: { labels: string[]; a: Series; b: Series }) {
   const [active, setActive] = useState<number | null>(null);
   const width = 720;
-  const height = 250;
-  const pad = { l: 36, r: 12, t: 16, b: 32 };
+  const height = 280;
+  const pad = { l: 52, r: 16, t: 28, b: 36 };
   const innerW = width - pad.l - pad.r;
   const innerH = height - pad.t - pad.b;
   const max = Math.max(...a.values.map((value) => value ?? 0), ...b.values.map((value) => value ?? 0), 1);
@@ -272,9 +330,15 @@ function DualLine({ labels, a, b }: { labels: string[]; a: Series; b: Series }) 
   return (
     <div className="chart">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${a.name} and ${b.name}`}>
+        <text x={pad.l} y={16} className="axis-title">Count</text>
         {[0, 0.5, 1].map((step) => {
           const y = pad.t + innerH - step * innerH;
-          return <line key={step} x1={pad.l} x2={width - pad.r} y1={y} y2={y} className="grid" />;
+          return (
+            <g key={step}>
+              <line x1={pad.l} x2={width - pad.r} y1={y} y2={y} className="grid" />
+              <text x={pad.l - 8} y={y + 4} textAnchor="end" className="axis">{Math.round(max * step)}</text>
+            </g>
+          );
         })}
         <polyline points={path(a)} fill="none" stroke="#00274C" strokeWidth="2.5" />
         <polyline points={path(b)} fill="none" stroke="#F15A24" strokeWidth="2.5" />

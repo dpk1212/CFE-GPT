@@ -3,7 +3,7 @@ import { HistoryDashboard } from "@/components/HistoryDashboard";
 
 export const metadata: Metadata = {
   title: "Historical Data",
-  description: "Undergraduate Princeton Review reporting series for University of Michigan Entrepreneurship + Innovation.",
+  description: "Undergraduate Princeton Review reporting series for University of Michigan Entrepreneurship & Innovation.",
 };
 
 export default function HistoricalDataPage() {

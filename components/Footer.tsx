@@ -4,7 +4,7 @@ export function Footer() {
       <div className="footer-grid">
         <div>
           <p className="footer-kicker">University of Michigan</p>
-          <p className="footer-name">Entrepreneurship + Innovation</p>
+          <p className="footer-name">Entrepreneurship &amp; Innovation</p>
           <p>Undergraduate Princeton Review reporting is coordinated by the Center for Entrepreneurship.</p>
         </div>
         <div>

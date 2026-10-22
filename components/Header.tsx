@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const links = [
+  { href: "/", label: "Home" },
   { href: "/partners", label: "Partners" },
   { href: "/historical-data", label: "Historical Data" },
   { href: "/login", label: "Log in" },
@@ -21,11 +22,8 @@ export function Header() {
   return (
     <header className="nav">
       <div className="nav-inner">
-        <Link href="/" className="brand" aria-label="University of Michigan Entrepreneurship + Innovation home">
-          <span className="brand-uni">University of Michigan</span>
-          <span className="brand-name">
-            Entrepreneurship <em>+</em> Innovation
-          </span>
+        <Link href="/" className="brand" aria-label="Entrepreneurship and Innovation, University of Michigan">
+          <img src="/umei-logo.svg" alt="Entrepreneurship & Innovation, University of Michigan" />
         </Link>
         <button className="nav-toggle" type="button" aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((value) => !value)}>
           {open ? "Close" : "Menu"}

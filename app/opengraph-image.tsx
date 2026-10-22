@@ -20,7 +20,7 @@ export default function OpenGraphImage() {
         }}
       >
         <div style={{ display: "flex", fontSize: 24, letterSpacing: 4, color: "#FFCB05" }}>UNIVERSITY OF MICHIGAN</div>
-        <div style={{ display: "flex", fontSize: 68, lineHeight: 1.05 }}>Entrepreneurship + Innovation</div>
+        <div style={{ display: "flex", fontSize: 68, lineHeight: 1.05 }}>Entrepreneurship & Innovation</div>
         <div style={{ display: "flex", fontSize: 28 }}>Undergraduate reporting</div>
       </div>
     ),

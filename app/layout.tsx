@@ -28,17 +28,17 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Entrepreneurship + Innovation | University of Michigan",
-    template: "%s | Entrepreneurship + Innovation",
+    default: "Entrepreneurship & Innovation | University of Michigan",
+    template: "%s | Entrepreneurship & Innovation",
   },
   description:
-    "University of Michigan Entrepreneurship + Innovation. Undergraduate Princeton Review reporting, coordinated by the Center for Entrepreneurship.",
+    "University of Michigan Entrepreneurship & Innovation. Undergraduate Princeton Review reporting, coordinated by the Center for Entrepreneurship.",
   openGraph: {
-    title: "Entrepreneurship + Innovation | University of Michigan",
+    title: "Entrepreneurship & Innovation | University of Michigan",
     description: "The undergraduate reporting record for Michigan’s entrepreneurship ecosystem.",
     type: "website",
     locale: "en_US",
-    siteName: "U-M Entrepreneurship + Innovation",
+    siteName: "U-M Entrepreneurship & Innovation",
   },
 };
 
@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
-    name: "Entrepreneurship + Innovation",
+    name: "Entrepreneurship & Innovation",
     parentOrganization: "University of Michigan",
     url: "https://entrepreneurship.umich.edu/",
     email: center.email,

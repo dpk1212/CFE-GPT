@@ -49,10 +49,8 @@ img { display: block; max-width: 100%; }
   align-items: center;
   gap: 1.5rem;
 }
-.brand { display: grid; gap: 0.12rem; text-decoration: none; color: white; min-width: 0; }
-.brand-uni { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--maize); font-weight: 700; }
-.brand-name { font-family: var(--font-serif), Georgia, serif; font-size: 1.28rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1; text-transform: none; }
-.brand-name em { font-style: normal; color: var(--maize); }
+.brand { display: flex; align-items: center; text-decoration: none; }
+.brand img { height: 28px; width: auto; }
 .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem; }
 .nav-links a {
   color: white;
@@ -198,6 +196,9 @@ img { display: block; max-width: 100%; }
 .kpi-label { margin: 0; color: var(--muted); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; }
 .kpi-value { margin: 0.4rem 0 0.55rem; font-family: var(--display); font-weight: 600; font-size: clamp(2.3rem, 3vw, 3.1rem); letter-spacing: 0; text-transform: none; line-height: 0.95; color: var(--blue); font-variant-numeric: tabular-nums; }
 .kpi-note { margin: 0; color: var(--muted); font-size: 0.92rem; display: flex; justify-content: space-between; gap: 0.6rem; align-items: center; }
+.kpi-help { margin: 0.55rem 0 0; color: #3e4c5e; font-size: 0.88rem; line-height: 1.45; }
+.axis-title { fill: #00274c; font-size: 12px; font-weight: 700; font-family: var(--sans); }
+.axis-title.right, .axis.right { fill: #c2410c; }
 .pill { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; padding: 0.18rem 0.45rem; white-space: nowrap; }
 .pill.up { color: #0d6b32; background: #e7f6ec; }
 .pill.down { color: #8d2424; background: #fdecec; }
@@ -233,8 +234,105 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
 .login-form { display: grid; gap: 0.8rem; margin-top: 1rem; }
 .login-form label { display: grid; gap: 0.3rem; font-weight: 600; }
 .login-form input { border: 1px solid var(--line); padding: 0.75rem 0.7rem; }
+.btn-solid, .btn-line { text-decoration: none; }
 .btn-solid { background: var(--blue); color: white; border: 0; min-height: 2.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
 .btn-solid:hover { background: #00386e; }
+
+.brief {
+  background: var(--blue);
+  color: white;
+  padding: 4.4rem 1.5rem 2.8rem;
+}
+.brief .eyebrow { color: var(--maize); letter-spacing: 0.18em; }
+.brief h1 {
+  max-width: 12ch;
+  margin: 0 0 1rem;
+  color: white;
+  font-size: clamp(3.4rem, 7vw, 6rem);
+  letter-spacing: 0.012em;
+  line-height: 0.9;
+}
+.brief-lede {
+  max-width: 38rem;
+  margin: 0;
+  font-size: 1.16rem;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.9);
+}
+.brief .stat-band {
+  margin: 2rem -1.5rem 1.35rem;
+  background: rgba(0, 12, 28, 0.28);
+  border-top: 1px solid rgba(255,255,255,0.14);
+  border-bottom: 1px solid rgba(255,255,255,0.14);
+}
+.brief .fine {
+  max-width: 44rem;
+  margin: 0 0 1.35rem;
+  color: rgba(255,255,255,0.72);
+  font-size: 0.95rem;
+}
+.brief .btn-solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding: 0 1.2rem;
+  background: var(--maize);
+  color: var(--blue);
+}
+.brief .btn-solid:hover { background: #ffe566; }
+.brief .btn-line.light {
+  min-height: 3rem;
+  padding: 0 1.2rem;
+  border-color: var(--maize);
+  color: white;
+  background: transparent;
+}
+.brief .btn-line.light:hover { background: var(--maize); color: var(--blue); }
+
+.home-block { max-width: 1180px; margin: 0 auto; padding: 3.2rem 1.5rem 0.4rem; }
+.home-block.activities { padding-bottom: 4.4rem; }
+.block-head {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 2rem;
+  align-items: end;
+  margin-bottom: 1.3rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 3px solid var(--blue);
+}
+.block-head h2 {
+  margin: 0;
+  color: var(--blue);
+  font-size: clamp(2.1rem, 4vw, 3.15rem);
+}
+.block-head p { margin: 0; color: #243246; }
+.yoy { width: 100%; height: auto; display: block; }
+.yoy-value { fill: var(--blue); font-size: 13px; font-weight: 700; font-family: var(--sans); }
+.yoy-label { fill: var(--muted); font-size: 12px; font-weight: 600; font-family: var(--sans); }
+.home-block .fine { margin: 0.7rem 0 0; color: var(--muted); font-size: 0.95rem; }
+.activity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.activity-grid a {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  min-height: 8.2rem;
+  padding: 1.15rem 1.15rem 1.05rem;
+  text-decoration: none;
+  background: var(--fog);
+  border-top: 3px solid var(--maize);
+}
+.activity-grid a:hover { background: #e8eef5; }
+.activity-grid strong {
+  color: var(--blue);
+  font-family: var(--display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 0.98;
+}
+.activity-grid span { color: #243246; font-size: 0.98rem; }
 .form-note { color: var(--muted); margin: 0; }
 
 .page-hero h1 { font-family: var(--font-serif), Georgia, serif; text-transform: none; letter-spacing: -0.035em; font-weight: 500; }
@@ -246,7 +344,10 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
 .footer p { margin: 0.25rem 0; }
 
 @media (max-width: 900px) {
-  .kpi-grid, .chart-grid, .partner-lead, .partner-list, .proof, .signature > div, .home-hero, .stat-band, .directory-head, .college-index, .footer-grid, .college li { grid-template-columns: 1fr; }
+  .kpi-grid, .chart-grid, .partner-lead, .partner-list, .proof, .signature > div, .home-hero, .stat-band, .directory-head, .college-index, .footer-grid, .college li, .block-head, .activity-grid { grid-template-columns: 1fr; }
+  .brand img { height: 22px; }
+  .brief { padding: 2.6rem 1.25rem 2rem; }
+  .brief .stat-band { margin-left: -1.25rem; margin-right: -1.25rem; }
   .stat-band article { border-left: 0; border-top: 1px solid rgba(255,255,255,0.14); }
   .home-hero { padding: 2.6rem 1.25rem 2rem; display: grid; }
   .proof a { border-right: 0; border-bottom: 1px solid var(--line); padding-right: 0; }
