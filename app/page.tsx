@@ -2,9 +2,9 @@ import Link from "next/link";
 import { history, integer, latest, percent } from "@/lib/history";
 
 const activities = [
-  { name: "Entrepreneurship Minor and ENTR courses", note: "Open to students in every school and college.", href: "/partners#university" },
+  { name: "Entrepreneurship Minor and ENTR courses", note: "Open to students in every school and college. Advised by Ross.", href: "/partners#ross" },
   { name: "Zell Lurie Institute", note: "Ross grants, mentors, and accelerators. The Institute coordinates the graduate rankings.", href: "/partners#ross" },
-  { name: "Business + Tech and Business + Impact", note: "Competitions, Impact Studio, and DNEP.", href: "/partners#ross" },
+  { name: "Business + Tech and Business + Impact", note: "Competitions, Impact Studio, the Erb Institute, and the Detroit Neighborhood Entrepreneurs Project.", href: "/partners#ross" },
   { name: "Center for Entrepreneurship", note: "ELP, EHour, I-Corps, and the TechLabs. Coordinates the undergraduate ranking.", href: "/partners#engineering" },
   { name: "optiMize", note: "LSA’s social innovation challenge and student community.", href: "/partners#lsa" },
   { name: "EXCEL Lab", note: "Venture and career support in Music, Theatre & Dance.", href: "/partners#smtd" },
