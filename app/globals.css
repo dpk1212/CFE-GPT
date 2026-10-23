@@ -211,7 +211,8 @@ img { display: block; max-width: 100%; }
 
 .page-hero { background: var(--blue); color: white; padding: 3.2rem 7vw 2.6rem; }
 .page-hero h1 { font-size: clamp(3.2rem, 6vw, 5rem); }
-.hero-rule { border-left: 4px solid var(--maize); padding-left: 1.15rem; max-width: 40rem; }
+.hero-rule { border-left: 4px solid var(--maize); padding-left: 1.15rem; max-width: 44rem; }
+.page-hero .lede-sentence { text-transform: none; letter-spacing: 0; font-size: 1.08rem; line-height: 1.45; font-weight: 500; max-width: 42rem; }
 
 .sheet { max-width: 1100px; margin: 0 auto; padding: 2.4rem 1.5rem 4.5rem; }
 .dash { background: #eef1f5; max-width: none; padding: 1.4rem 1.4rem 3.5rem; }

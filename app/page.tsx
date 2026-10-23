@@ -53,7 +53,7 @@ export default function HomePage() {
       <section className="home-block">
         <div className="block-head">
           <h2>Partners, year over year</h2>
-          <p>Campus partners contributing to the undergraduate ranking, by year. Colleges and units are listed on the Partners page.</p>
+          <p>U-M’s undergraduate schools, colleges, and units are listed on the Partners page.</p>
         </div>
         <svg className="yoy" viewBox="0 0 720 220" role="img" aria-label="Reporting partners by rankings year">
           {history.map((row, index) => {

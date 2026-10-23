@@ -12,7 +12,7 @@ export default function HistoricalDataPage() {
       <header className="page-hero">
         <div className="hero-rule">
           <h1>Historical data</h1>
-          <p>Nine years of the undergraduate ranking, coordinated by the Center for Entrepreneurship with the campus partners.</p>
+          <p className="lede-sentence">Since the 2014 academic year, U-M undergraduate entrepreneurship and innovation opportunities have been globally top-ranked. The 2027 rankings will be our 13th year.</p>
         </div>
       </header>
       <HistoryDashboard />

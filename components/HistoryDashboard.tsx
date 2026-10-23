@@ -72,7 +72,7 @@ export function HistoryDashboard() {
       value: integer(latest.ventureTests ?? 0),
       note: "Tests of a venture assumption",
       delta: ventureDelta.label,
-      help: "Occasions when students tested a venture assumption with a customer, user, or prototype. The series begins with the 2022 ranking.",
+      help: "The question asks whether a student developed an actionable plan with assumption testing to launch a business while a student. This survey question was first asked in ’22.",
     },
     {
       label: "Prize money, cumulative",
@@ -143,7 +143,7 @@ export function HistoryDashboard() {
             b={{ name: "Departments", values: history.map((row) => row.departments), format: integer }}
           />
         </Panel>
-        <Panel title="Student venture testing" note="Venture tests each year. The series begins with the 2022 ranking." openHelp={openHelp} onToggle={toggleHelp}>
+        <Panel title="Student venture testing" note="The question asks whether a student developed an actionable plan with assumption testing to launch a business while a student. This survey question was first asked in ’22." openHelp={openHelp} onToggle={toggleHelp}>
           <BarChart
             labels={labels}
             name="Venture tests"

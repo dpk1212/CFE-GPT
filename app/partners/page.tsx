@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { integer, latest } from "@/lib/history";
-import { colleges, unitCount } from "@/lib/partners";
+import { colleges } from "@/lib/partners";
 
 export const metadata: Metadata = {
   title: "Partners",
@@ -13,13 +12,13 @@ export default function PartnersPage() {
       <header className="page-hero">
         <div className="hero-rule">
           <h1>Partners</h1>
-          <p>The colleges, schools, and units of Entrepreneurship &amp; Innovation at Michigan.</p>
+          <p className="lede-sentence">Discover the colleges, schools, and units supporting Entrepreneurship &amp; Innovation across Michigan.</p>
         </div>
       </header>
       <section className="sheet directory">
         <div className="directory-lead">
           <p>
-            {unitCount} units are named here, across {colleges.length} groups. {integer(latest.partners)} partners contributed to the {latest.academic} undergraduate ranking. The directory will grow as additional partners are confirmed.
+            The directory will grow as additional partners join the ecosystem.
           </p>
           <nav className="partner-index" aria-label="Schools and groups">
             {colleges.map((college) => (
