@@ -1,15 +1,10 @@
 import Link from "next/link";
 import { history, integer, latest, percent } from "@/lib/history";
 
-const activities = [
-  { name: "Entrepreneurship Minor and ENTR courses", note: "Open to students in every school and college. Advised by Ross.", href: "/partners#ross" },
-  { name: "Zell Lurie Institute", note: "Ross grants, mentors, and accelerators. The Institute coordinates the graduate rankings.", href: "/partners#ross" },
-  { name: "Business + Tech and Business + Impact", note: "Competitions, Impact Studio, the Erb Institute, and the Detroit Neighborhood Entrepreneurs Project.", href: "/partners#ross" },
-  { name: "Center for Entrepreneurship", note: "ELP, EHour, I-Corps, and the TechLabs. Coordinates the undergraduate ranking.", href: "/partners#engineering" },
-  { name: "optiMize", note: "LSA’s social innovation challenge and student community.", href: "/partners#lsa" },
-  { name: "EXCEL Lab", note: "Venture and career support in Music, Theatre & Dance.", href: "/partners#smtd" },
-  { name: "Center for Socially Engaged Engineering & Design", note: "Includes Innovation in Action.", href: "/partners#engineering" },
-  { name: "Wilson Center and MDP", note: "Engineering team projects and multidisciplinary design.", href: "/partners#engineering" },
+const directories = [
+  { name: "Events", note: "See what’s happening across units.", href: "https://entrepreneurship.umich.edu/events/" },
+  { name: "Opportunities & Funding", note: "Resources to help guide your roadmap.", href: "https://entrepreneurship.umich.edu/programs/" },
+  { name: "Student Orgs", note: "Find your co-curricular path.", href: "https://maizepages.umich.edu/organizations?query=entrepreneurship" },
 ];
 
 export default function HomePage() {
@@ -21,7 +16,7 @@ export default function HomePage() {
         <p className="eyebrow">Princeton Review · Entrepreneur · 2026</p>
         <h1>Undergraduate overview</h1>
         <p className="brief-lede">
-          Michigan’s undergraduate entrepreneurship ranking, prepared with the campus partners and coordinated by the Center for Entrepreneurship. Graduate rankings are coordinated by the Zell Lurie Institute.
+          Collaboration across campus partners and with the Office of Budget and Planning contributes to our rankings. Undergraduate survey responses are coordinated by the Center for Entrepreneurship. Graduate survey responses are coordinated by the Zell Lurie Institute. All reporting partners directly share in Michigan’s recognition for excellence in innovation and entrepreneurship.
         </p>
         <div className="stat-band" aria-label="2026 undergraduate placement">
           <article>
@@ -42,7 +37,7 @@ export default function HomePage() {
           </article>
         </div>
         <p className="fine">
-          In 2025, the undergraduate ranking was No. 6. The 2026 rankings were announced November 12, 2025. {integer(latest.partners)} partners contributed to the {latest.cycle} ranking.
+          Annual global rankings are <a href="https://www.princetonreview.com/college-rankings/top-entrepreneur" target="_blank" rel="noreferrer">announced</a> by survey publishers mid-November. At present, nearly 30 campus-wide undergraduate entrepreneurship and innovation units participate in U-M’s reporting efforts, resulting in year-over-year Top 10 global rankings since 2016!
         </p>
         <div className="hero-actions">
           <Link className="btn-solid" href="/historical-data">Historical data</Link>
@@ -78,14 +73,13 @@ export default function HomePage() {
       <section className="home-block activities">
         <div className="block-head">
           <h2>What is happening at Michigan</h2>
-          <p>Entrepreneurship and innovation across the colleges and schools. Each partner is described in the directory.</p>
         </div>
         <div className="activity-grid">
-          {activities.map((item) => (
-            <Link key={item.name} href={item.href}>
+          {directories.map((item) => (
+            <a key={item.name} href={item.href} target="_blank" rel="noreferrer">
               <strong>{item.name}</strong>
               <span>{item.note}</span>
-            </Link>
+            </a>
           ))}
         </div>
       </section>

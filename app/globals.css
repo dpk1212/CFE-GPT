@@ -359,6 +359,8 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
   color: rgba(255,255,255,0.72);
   font-size: 0.95rem;
 }
+.brief .fine a { color: var(--maize); font-weight: 600; text-decoration: underline; text-underline-offset: 0.16em; }
+.brief .fine a:hover { color: white; }
 .brief .btn-solid {
   display: inline-flex;
   align-items: center;
@@ -399,7 +401,8 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
 .yoy-value { fill: var(--blue); font-size: 13px; font-weight: 700; font-family: var(--sans); }
 .yoy-label { fill: var(--muted); font-size: 12px; font-weight: 600; font-family: var(--sans); }
 .home-block .fine { margin: 0.7rem 0 0; color: var(--muted); font-size: 0.95rem; }
-.activity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.activities .block-head { grid-template-columns: 1fr; }
+.activity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
 .activity-grid a {
   display: grid;
   align-content: start;
