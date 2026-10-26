@@ -3,6 +3,7 @@ export type Unit = {
   aka?: string;
   note: string;
   href?: string;
+  noteLinks?: { label: string; href: string }[];
 };
 
 export type College = {
@@ -21,34 +22,39 @@ export const colleges: College[] = [
       {
         name: "Center for Entrepreneurship",
         aka: "CFE",
-        note: "Campus-wide courses and experiences for students building and launching ideas. Coordinates the undergraduate Princeton Review ranking.",
+        note: "Campus-wide courses and co-curricular experiences for students exploring, building, and launching ideas. Coordinates U-M’s undergraduate Princeton Review & Entrepreneur Magazine survey reporting.",
         href: "https://cfe.umich.edu/",
       },
       {
         name: "Center for Socially Engaged Engineering & Design",
         aka: "C-SED",
-        note: "Socially engaged engineering and design, including Innovation in Action, a months-long challenge open to any discipline.",
+        note: "Empowers engineering educators and students at U-M and beyond to connect technical design with societal needs, contexts, and impacts through human-centered learning and research.",
         href: "https://csed.engin.umich.edu/",
       },
       {
         name: "Honors & Engagement",
-        note: "The honors community and student engagement office in the College of Engineering.",
+        note: "Our office leads core academic and leadership initiatives across Michigan Engineering—including the Honors Program, Engineering Global Leadership specialization, ENGR 110 and 499 courses, the Common Reading Experience, and representation in the Michigan Leadership Collaborative.",
         href: "https://honors.engin.umich.edu/",
       },
       {
         name: "Multidisciplinary Design Program",
         aka: "MDP",
-        note: "Design and research projects for credit, connecting students from many majors with faculty and outside sponsors.",
+        note: "Discover applied project opportunities. Put your classroom knowledge into practice through open-ended, team-based engineering projects open to students of many majors and GPA.",
         href: "https://mdp.engin.umich.edu/",
       },
       {
         name: "Wilson Student Team Project Center",
-        note: "Workspace, training, and support for Engineering student project teams.",
+        aka: "WSTPC",
+        note: "The Wilson Center offers student teams dedicated fabrication facilities, cross-disciplinary collaboration, and a platform to showcase hands-on engineering innovation.",
         href: "https://teamprojects.engin.umich.edu/",
       },
       {
         name: "ArtsEngine",
-        note: "A partnership across art, design, architecture, music, engineering, and information. 2025–26 was its final year.",
+        note: "A partnership across art, design, architecture, music, engineering, and information. In 2026, its funding programs moved to Engaged Michigan’s Arts-Integrated Grant, and Faculty Engineering/Arts Student Teams (FEAST) moved to the Arts Initiative.",
+        noteLinks: [
+          { label: "Arts-Integrated Grant", href: "https://engaged.umich.edu/michigan/artsengine-grant/" },
+          { label: "Arts Initiative", href: "https://arts.umich.edu/" },
+        ],
         href: "https://artsengine.engin.umich.edu/",
       },
     ],

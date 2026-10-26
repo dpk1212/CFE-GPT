@@ -173,7 +173,9 @@ img { display: block; max-width: 100%; }
 .solo-unit p { margin: 0; max-width: 48rem; color: #243246; }
 .solo-unit .unit-link { margin-top: 0; white-space: nowrap; }
 .unit-grid strong { font-family: var(--display); font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; font-size: 1.42rem; line-height: 0.98; color: var(--blue); }
-.unit-grid li p { margin: 0; color: #243246; }
+.unit-grid li p, .solo-unit p { margin: 0; color: #243246; }
+.note-link { color: var(--blue); font-weight: 600; text-decoration: underline; text-underline-offset: 0.16em; }
+.note-link:hover { color: #00386e; }
 .unit-link { margin-top: auto; color: var(--blue); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; }
 .unit-link:hover { color: #00386e; }
 .aka { margin-left: 0.5rem; color: var(--muted); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
