@@ -1,0 +1,416 @@
+"use client";
+
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useChartPlay } from "@/components/ChartFrame";
+import { history, integer, latest, money, percent, prior, type HistoryYear } from "@/lib/history";
+
+type Mode = "cycle" | "academic";
+
+function delta(current: number, previous: number) {
+  const change = current - previous;
+  const ratio = previous === 0 ? 0 : change / previous;
+  const sign = change > 0 ? "+" : "";
+  return { change, label: `${sign}${Math.round(ratio * 1000) / 10}%` };
+}
+
+function labelFor(row: HistoryYear, mode: Mode) {
+  return mode === "cycle" ? `’${row.cycle.slice(2)}` : row.academic.replace("–", "-");
+}
+
+export function HistoryDashboard() {
+  const [mode, setMode] = useState<Mode>("cycle");
+  const [openHelp, setOpenHelp] = useState<string | null>(null);
+  const labels = history.map((row) => labelFor(row, mode));
+  const enrollmentDelta = delta(latest.enrollment, prior.enrollment);
+  const partnerDelta = delta(latest.partners, prior.partners);
+  const ventureDelta = delta(latest.ventureTests ?? 0, prior.ventureTests ?? 0);
+  const awardDelta = delta(latest.scholarshipDollars, prior.scholarshipDollars);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpenHelp(null);
+    }
+    function onPointer(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(".help")) setOpenHelp(null);
+    }
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, []);
+
+  function toggleHelp(id: string) {
+    setOpenHelp((current) => (current === id ? null : id));
+  }
+
+  const kpis = [
+    {
+      label: "Enrollment",
+      value: integer(latest.enrollment),
+      note: `${percent(latest.ugShare)} of undergraduates`,
+      delta: enrollmentDelta.label,
+      help: "Undergraduates who took part in an entrepreneurship course or experience. Each student is counted once, even when they joined more than one.",
+    },
+    {
+      label: "Partners",
+      value: integer(latest.partners),
+      note: `From ${history[0].partners} in ${history[0].academic}`,
+      delta: partnerDelta.label,
+      help: "Colleges, schools, and units that contributed to this year’s undergraduate ranking. The Partners page names those confirmed so far.",
+    },
+    {
+      label: "Majors represented",
+      value: integer(latest.majors),
+      note: `${integer(latest.departments)} faculty departments`,
+      delta: delta(latest.majors, prior.majors).label,
+      help: "Distinct undergraduate majors among these students. Departments are the faculty homes that taught or sponsored the work.",
+    },
+    {
+      label: "Venture tests",
+      value: integer(latest.ventureTests ?? 0),
+      note: "Tests of a venture assumption",
+      delta: ventureDelta.label,
+      help: "The question asks whether a student developed an actionable plan with assumption testing to launch a business while a student. This survey question was first asked in ’22.",
+    },
+    {
+      label: "Prize money, cumulative",
+      value: money(latest.prizeCumulative),
+      note: `${money(latest.prize)} this year`,
+      delta: "",
+      help: "Student prize money since 2017–18. This card is the running total. The chart shows each year’s awards beside that total.",
+    },
+    {
+      label: "Grants and scholarships, cumulative",
+      value: money(latest.scholarshipDollarsCumulative),
+      note: `${integer(latest.scholarships)} grants and scholarships · ${money(latest.scholarshipDollars)} this year`,
+      delta: awardDelta.label,
+      help: "Scholarships and grants from any source. The change compares this year’s dollars with last year. The figure is the total since 2017–18.",
+    },
+  ];
+
+  return (
+    <div className="dash">
+      <section className="signature" aria-label="2025 to 2026 headline figures">
+        <p>Undergraduate ranking · 2025–26 · 2027 cycle</p>
+        <div>
+          <article><strong>{integer(latest.enrollment)}</strong><span>Enrollment</span></article>
+          <article><strong>{percent(latest.ugShare)}</strong><span>Undergraduate share</span></article>
+          <article><strong>{integer(latest.partners)}</strong><span>Partners</span></article>
+          <article><strong>{money(Math.round((latest.prizeCumulative + latest.scholarshipDollarsCumulative) * 100) / 100)}</strong><span>Prize, grants, and scholarships</span></article>
+        </div>
+      </section>
+      <div className="dash-toolbar" data-reveal="item">
+        <p>Each change is from 2024–25. Show the rankings year or the academic year.</p>
+        <div className="segment" role="group" aria-label="Axis labels">
+          <button type="button" aria-pressed={mode === "cycle"} className={mode === "cycle" ? "on" : ""} onClick={() => setMode("cycle")}>Rankings year</button>
+          <button type="button" aria-pressed={mode === "academic"} className={mode === "academic" ? "on" : ""} onClick={() => setMode("academic")}>Academic year</button>
+        </div>
+      </div>
+
+      <div className="kpi-grid" data-reveal="group">
+        {kpis.map((item) => (
+          <article key={item.label}>
+            <div className="kpi-top">
+              <p className="kpi-label">{item.label}</p>
+              <Explain id={helpId("kpi", item.label)} label={item.label} text={item.help} open={openHelp === helpId("kpi", item.label)} onToggle={toggleHelp} />
+            </div>
+            <p className="kpi-value">{item.value}</p>
+            <p className="kpi-note">
+              <span>{item.note}</span>
+              {item.delta && !item.delta.startsWith("-") ? <span className="pill up">{item.delta}</span> : item.delta ? null : <span className="pill flat">Cumulative</span>}
+            </p>
+          </article>
+        ))}
+      </div>
+
+      <div className="chart-grid" data-reveal="group">
+        <Panel title="Enrollment" note="Bars are students, counted once. The line is their share of the undergraduate student body. Left is students. Right is percent." openHelp={openHelp} onToggle={toggleHelp}>
+          <ComboChart
+            labels={labels}
+            bars={{ name: "Students", values: history.map((row) => row.enrollment), format: integer, axis: compactCount }}
+            line={{ name: "Share of undergraduates", values: history.map((row) => row.ugShare * 100), format: (value) => `${Math.round(value)}%`, axis: (value) => `${Math.round(value)}%` }}
+          />
+        </Panel>
+        <Panel title="Partners" note="Campus partners contributing to the undergraduate ranking each year." openHelp={openHelp} onToggle={toggleHelp}>
+          <BarChart labels={labels} name="Partners" values={history.map((row) => row.partners)} format={integer} />
+        </Panel>
+        <Panel title="Reach across campus" note="Navy is distinct majors. Orange is faculty departments. Both use the same count." openHelp={openHelp} onToggle={toggleHelp}>
+          <DualLine
+            labels={labels}
+            a={{ name: "Majors", values: history.map((row) => row.majors), format: integer }}
+            b={{ name: "Departments", values: history.map((row) => row.departments), format: integer }}
+          />
+        </Panel>
+        <Panel title="Student venture testing" note="The question asks whether a student developed an actionable plan with assumption testing to launch a business while a student. This survey question was first asked in ’22." openHelp={openHelp} onToggle={toggleHelp}>
+          <BarChart
+            labels={labels}
+            name="Venture tests"
+            values={history.map((row) => row.ventureTests)}
+            format={(value) => integer(value)}
+          />
+        </Panel>
+        <Panel title="Student prize money" note="Bars are dollars awarded that year. The line is the total since 2017–18. Left is the year. Right is the running total." wide openHelp={openHelp} onToggle={toggleHelp}>
+          <ComboChart
+            labels={labels}
+            bars={{ name: "Awarded that year", values: history.map((row) => row.prize), format: money, axis: compactMoney }}
+            line={{ name: "Running total", values: history.map((row) => row.prizeCumulative), format: money, axis: compactMoney }}
+          />
+        </Panel>
+        <Panel title="Grants and scholarships" note="Bars are the number of grants and scholarships. The line is total dollars since 2017–18. Left is the count. Right is dollars." wide openHelp={openHelp} onToggle={toggleHelp}>
+          <ComboChart
+            labels={labels}
+            bars={{ name: "Grants and scholarships", values: history.map((row) => row.scholarships), format: integer, axis: compactCount }}
+            line={{ name: "Cumulative dollars", values: history.map((row) => row.scholarshipDollarsCumulative), format: money, axis: compactMoney }}
+          />
+        </Panel>
+      </div>
+
+      <section className="table-wrap" data-reveal="item">
+        <h2>Year by year</h2>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Academic year</th>
+                <th>Rankings</th>
+                <th>Enrollment</th>
+                <th>UG share</th>
+                <th>Partners</th>
+                <th>Majors</th>
+                <th>Departments</th>
+                <th>Venture tests</th>
+                <th>Prize money</th>
+                <th>Prize, cumulative</th>
+                <th>Grants and scholarships</th>
+                <th>Grant and scholarship dollars</th>
+                <th>Dollars, cumulative</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((row) => (
+                <tr key={row.academic} className={row === latest ? "current" : undefined}>
+                  <td>{row.academic}</td>
+                  <td>{row.cycle}</td>
+                  <td>{integer(row.enrollment)}</td>
+                  <td>{percent(row.ugShare)}</td>
+                  <td>{integer(row.partners)}</td>
+                  <td>{integer(row.majors)}</td>
+                  <td>{integer(row.departments)}</td>
+                  <td>{row.ventureTests == null ? "—" : integer(row.ventureTests)}</td>
+                  <td>{money(row.prize)}</td>
+                  <td>{money(row.prizeCumulative)}</td>
+                  <td>{integer(row.scholarships)}</td>
+                  <td>{money(row.scholarshipDollars)}</td>
+                  <td>{money(row.scholarshipDollarsCumulative)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Panel({ title, note, children, wide = false, openHelp, onToggle }: { title: string; note: string; children: ReactNode; wide?: boolean; openHelp: string | null; onToggle: (id: string) => void }) {
+  const id = helpId("chart", title);
+  return (
+    <section className={wide ? "panel wide" : "panel"}>
+      <div className="panel-head">
+        <h2>{title}</h2>
+        <Explain id={id} label={title} text={note} open={openHelp === id} onToggle={onToggle} />
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function helpId(prefix: string, label: string) {
+  return `${prefix}-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+function Explain({ id, label, text, open, onToggle }: { id: string; label: string; text: string; open: boolean; onToggle: (id: string) => void }) {
+  return (
+    <span className="help">
+      <button type="button" className="help-btn" aria-expanded={open} aria-controls={open ? id : undefined} aria-label={`Explain ${label}`} onClick={() => onToggle(id)}>
+        ?
+      </button>
+      {open ? (
+        <span className="help-pop" id={id} role="note">
+          {text}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+type Series = { name: string; values: Array<number | null>; format: (value: number) => string; axis?: (value: number) => string };
+
+function compactCount(value: number) {
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+  return `${Math.round(value)}`;
+}
+
+function compactMoney(value: number) {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1000) return `$${Math.round(value / 1000)}k`;
+  return `$${Math.round(value)}`;
+}
+
+function BarChart({ labels, name, values, format }: { labels: string[]; name: string; values: Array<number | null>; format: (value: number) => string }) {
+  return <ComboChart labels={labels} bars={{ name, values, format }} />;
+}
+
+function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; line?: Series }) {
+  const [active, setActive] = useState<number | null>(null);
+  const width = 720;
+  const height = 280;
+  const pad = { l: 58, r: line ? 64 : 18, t: 28, b: 36 };
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+  const barValues = bars.values.map((value) => value ?? 0);
+  const barMax = Math.max(...barValues, 1);
+  const lineMax = line ? Math.max(...line.values.map((value) => value ?? 0), 1) : 1;
+  const slot = innerW / labels.length;
+  const leftTick = bars.axis ?? ((value: number) => bars.format(Math.round(value)));
+  const rightTick = line ? (line.axis ?? ((value: number) => line.format(Math.round(value)))) : undefined;
+  const frame = useChartPlay(`${bars.name}|${labels.join("|")}`);
+
+  const linePath = useMemo(() => {
+    if (!line) return "";
+    return line.values
+      .map((value, index) => {
+        if (value == null) return null;
+        const x = pad.l + slot * index + slot / 2;
+        const y = pad.t + innerH - (value / lineMax) * innerH;
+        return `${x},${y}`;
+      })
+      .filter(Boolean)
+      .join(" ");
+  }, [line, lineMax, innerH, slot]);
+
+  return (
+    <div ref={frame} className="chart">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={bars.name}>
+        <text x={pad.l} y={16} className="axis-title">{bars.name}</text>
+        {line ? <text x={width - pad.r} y={16} textAnchor="end" className="axis-title right">{line.name}</text> : null}
+        {[0, 0.5, 1].map((step) => {
+          const y = pad.t + innerH - step * innerH;
+          return (
+            <g key={step}>
+              <line x1={pad.l} x2={width - pad.r} y1={y} y2={y} className="grid" />
+              <text x={pad.l - 8} y={y + 4} textAnchor="end" className="axis">{leftTick(barMax * step)}</text>
+              {line && rightTick ? <text x={width - pad.r + 8} y={y + 4} className="axis right">{rightTick(lineMax * step)}</text> : null}
+            </g>
+          );
+        })}
+        {bars.values.map((value, index) => {
+          const amount = value ?? 0;
+          const barH = value == null ? 0 : (amount / barMax) * innerH;
+          const x = pad.l + slot * index + slot * 0.22;
+          const y = pad.t + innerH - barH;
+          return (
+            <rect
+              key={labels[index]}
+              className="series-bar"
+              style={{ animationDelay: `${index * 0.04}s` }}
+              x={x}
+              y={y}
+              width={slot * 0.56}
+              height={barH}
+              fill={active === index ? "#FFCB05" : index === bars.values.length - 1 ? "#E0B000" : "#00274C"}
+              onMouseEnter={() => setActive(index)}
+              onMouseLeave={() => setActive(null)}
+            />
+          );
+        })}
+        {line && linePath ? <polyline className="series-line" pathLength="1" points={linePath} fill="none" stroke="#F15A24" strokeWidth="2.5" style={{ animationDelay: "0.18s" }} /> : null}
+        {line
+          ? line.values.map((value, index) => {
+              if (value == null) return null;
+              const x = pad.l + slot * index + slot / 2;
+              const y = pad.t + innerH - (value / lineMax) * innerH;
+              return <circle key={labels[index]} className="series-dot" style={{ animationDelay: `${0.55 + index * 0.035}s` }} cx={x} cy={y} r={active === index ? 5 : 3.5} fill="#F15A24" />;
+            })
+          : null}
+        {labels.map((label, index) => (
+          <text key={label} x={pad.l + slot * index + slot / 2} y={height - 8} textAnchor="middle" className="axis">
+            {label}
+          </text>
+        ))}
+      </svg>
+      <div className="legend">
+        <span><i className="swatch navy" /> Left · {bars.name}</span>
+        {line ? <span><i className="swatch orange" /> Right · {line.name}</span> : null}
+        {active != null && bars.values[active] != null ? (
+          <strong>
+            {labels[active]} · {bars.format(bars.values[active] as number)}
+            {line && line.values[active] != null ? ` · ${line.format(line.values[active] as number)}` : ""}
+          </strong>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function DualLine({ labels, a, b }: { labels: string[]; a: Series; b: Series }) {
+  const [active, setActive] = useState<number | null>(null);
+  const width = 720;
+  const height = 280;
+  const pad = { l: 52, r: 16, t: 28, b: 36 };
+  const innerW = width - pad.l - pad.r;
+  const innerH = height - pad.t - pad.b;
+  const max = Math.max(...a.values.map((value) => value ?? 0), ...b.values.map((value) => value ?? 0), 1);
+  const slot = innerW / labels.length;
+  const frame = useChartPlay(`${a.name}|${b.name}|${labels.join("|")}`);
+  const path = (series: Series) =>
+    series.values
+      .map((value, index) => {
+        if (value == null) return null;
+        const x = pad.l + slot * index + slot / 2;
+        const y = pad.t + innerH - (value / max) * innerH;
+        return `${x},${y}`;
+      })
+      .filter(Boolean)
+      .join(" ");
+
+  return (
+    <div ref={frame} className="chart">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${a.name} and ${b.name}`}>
+        <text x={pad.l} y={16} className="axis-title">Count</text>
+        {[0, 0.5, 1].map((step) => {
+          const y = pad.t + innerH - step * innerH;
+          return (
+            <g key={step}>
+              <line x1={pad.l} x2={width - pad.r} y1={y} y2={y} className="grid" />
+              <text x={pad.l - 8} y={y + 4} textAnchor="end" className="axis">{Math.round(max * step)}</text>
+            </g>
+          );
+        })}
+        <polyline className="series-line" pathLength="1" points={path(a)} fill="none" stroke="#00274C" strokeWidth="2.5" />
+        <polyline className="series-line" pathLength="1" points={path(b)} fill="none" stroke="#F15A24" strokeWidth="2.5" style={{ animationDelay: "0.16s" }} />
+        {labels.map((label, index) => {
+          const x = pad.l + slot * index + slot / 2;
+          return (
+            <g key={label} onMouseEnter={() => setActive(index)} onMouseLeave={() => setActive(null)}>
+              <rect x={pad.l + slot * index} y={pad.t} width={slot} height={innerH} fill="transparent" />
+              <text x={x} y={height - 8} textAnchor="middle" className="axis">{label}</text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="legend">
+        <span><i className="swatch navy" /> {a.name}</span>
+        <span><i className="swatch orange" /> {b.name}</span>
+        {active != null ? (
+          <strong>
+            {labels[active]} · {a.format(a.values[active] as number)} majors · {b.format(b.values[active] as number)} departments
+          </strong>
+        ) : null}
+      </div>
+    </div>
+  );
+}
