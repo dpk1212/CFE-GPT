@@ -45,7 +45,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="home-block">
+      <section className="home-block" data-reveal="item">
         <div className="block-head">
           <h2>Partners, year over year</h2>
           <p>U-M’s undergraduate schools, colleges, and units are listed on the Partners page.</p>
@@ -71,10 +71,10 @@ export default function HomePage() {
       </section>
 
       <section className="home-block activities">
-        <div className="block-head">
+        <div className="block-head" data-reveal="item">
           <h2>What is happening at Michigan</h2>
         </div>
-        <div className="activity-grid">
+        <div className="activity-grid" data-reveal="group">
           {directories.map((item) => (
             <a key={item.name} href={item.href} target="_blank" rel="noreferrer">
               <strong>{item.name}</strong>

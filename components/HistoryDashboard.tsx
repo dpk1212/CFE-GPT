@@ -101,7 +101,7 @@ export function HistoryDashboard() {
           <article><strong>{money(Math.round((latest.prizeCumulative + latest.scholarshipDollarsCumulative) * 100) / 100)}</strong><span>Prize, grants, and scholarships</span></article>
         </div>
       </section>
-      <div className="dash-toolbar">
+      <div className="dash-toolbar" data-reveal="item">
         <p>Each change is from 2024–25. Show the rankings year or the academic year.</p>
         <div className="segment" role="group" aria-label="Axis labels">
           <button type="button" aria-pressed={mode === "cycle"} className={mode === "cycle" ? "on" : ""} onClick={() => setMode("cycle")}>Rankings year</button>
@@ -109,7 +109,7 @@ export function HistoryDashboard() {
         </div>
       </div>
 
-      <div className="kpi-grid">
+      <div className="kpi-grid" data-reveal="group">
         {kpis.map((item) => (
           <article key={item.label}>
             <div className="kpi-top">
@@ -125,7 +125,7 @@ export function HistoryDashboard() {
         ))}
       </div>
 
-      <div className="chart-grid">
+      <div className="chart-grid" data-reveal="group">
         <Panel title="Enrollment" note="Bars are students, counted once. The line is their share of the undergraduate student body. Left is students. Right is percent." openHelp={openHelp} onToggle={toggleHelp}>
           <ComboChart
             labels={labels}
@@ -167,7 +167,7 @@ export function HistoryDashboard() {
         </Panel>
       </div>
 
-      <section className="table-wrap">
+      <section className="table-wrap" data-reveal="item">
         <h2>Year by year</h2>
         <div className="table-scroll">
           <table>

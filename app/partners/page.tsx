@@ -37,7 +37,7 @@ export default function PartnersPage() {
         </div>
       </header>
       <section className="sheet directory">
-        <div className="directory-lead">
+        <div className="directory-lead" data-reveal="item">
           <p>
             The directory will grow as additional partners join the ecosystem.
           </p>
@@ -52,12 +52,12 @@ export default function PartnersPage() {
         </div>
         {colleges.map((college) => (
           <section key={college.id} id={college.id} className="college">
-            <div className="college-head">
+            <div className="college-head" data-reveal="item">
               <h2>{college.name}</h2>
               <span>{college.units.length === 1 ? "1 unit" : `${college.units.length} units`}</span>
             </div>
             {college.units.length === 1 && college.units[0].name === college.name ? (
-              <div className="solo-unit">
+              <div className="solo-unit" data-reveal="item">
                 <UnitNote unit={college.units[0]} />
                 {college.units[0].href ? (
                   <a className="unit-link" href={college.units[0].href} target="_blank" rel="noreferrer">
@@ -66,7 +66,7 @@ export default function PartnersPage() {
                 ) : null}
               </div>
             ) : (
-            <ul className="unit-grid">
+            <ul className="unit-grid" data-reveal="group">
               {college.units.map((unit) => (
                 <li key={unit.name}>
                   <div>

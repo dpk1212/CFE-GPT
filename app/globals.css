@@ -434,6 +434,110 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
 .footer a { color: var(--maize); }
 .footer p { margin: 0.25rem 0; }
 
+@media (prefers-reduced-motion: no-preference) {
+  .nav-links a,
+  .btn-solid,
+  .btn-line,
+  .unit-link,
+  .note-link,
+  .partner-index a,
+  .activity-grid a,
+  .unit-grid li,
+  .solo-unit,
+  .kpi-grid article,
+  .panel,
+  .segment button,
+  .help-btn {
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .unit-grid li:hover,
+  .solo-unit:hover,
+  .activity-grid a:hover,
+  .kpi-grid article:hover,
+  .panel:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 40px rgba(0, 21, 44, 0.08);
+  }
+
+  .page-hero .hero-rule,
+  .brief .eyebrow,
+  .brief h1,
+  .brief .brief-lede,
+  .brief .fine,
+  .brief .hero-actions,
+  .brief .stat-band article,
+  .signature,
+  .login-card {
+    animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .brief h1 { animation-delay: 0.05s; }
+  .brief .brief-lede { animation-delay: 0.12s; }
+  .brief .stat-band article:nth-child(1) { animation-delay: 0.18s; }
+  .brief .stat-band article:nth-child(2) { animation-delay: 0.26s; }
+  .brief .stat-band article:nth-child(3) { animation-delay: 0.34s; }
+  .brief .stat-band article:nth-child(4) { animation-delay: 0.42s; }
+  .brief .fine { animation-delay: 0.46s; }
+  .brief .hero-actions { animation-delay: 0.54s; }
+  .signature { animation-delay: 0.12s; }
+
+  [data-reveal].wait {
+    opacity: 0;
+    translate: 0 18px;
+  }
+  [data-reveal="item"].is-in:not(.seen) {
+    animation: rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  [data-reveal="group"].wait > * {
+    opacity: 0;
+    translate: 0 16px;
+  }
+  [data-reveal="group"].is-in:not(.seen) > * {
+    animation: rise 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(2) { animation-delay: 0.06s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(3) { animation-delay: 0.12s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(4) { animation-delay: 0.18s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(5) { animation-delay: 0.24s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(6) { animation-delay: 0.3s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(7) { animation-delay: 0.36s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(8) { animation-delay: 0.42s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(9) { animation-delay: 0.48s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(10) { animation-delay: 0.54s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(11) { animation-delay: 0.6s; }
+  [data-reveal="group"].is-in:not(.seen) > *:nth-child(12) { animation-delay: 0.66s; }
+
+  [data-reveal].is-in:not(.seen) .yoy g rect {
+    transform-box: fill-box;
+    transform-origin: bottom center;
+    animation: bar-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  [data-reveal].is-in:not(.seen) .yoy g:nth-child(2) rect { animation-delay: 0.04s; }
+  [data-reveal].is-in:not(.seen) .yoy g:nth-child(3) rect { animation-delay: 0.08s; }
+  [data-reveal].is-in:not(.seen) .yoy g:nth-child(4) rect { animation-delay: 0.12s; }
+  [data-reveal].is-in:not(.seen) .yoy g:nth-child(5) rect { animation-delay: 0.16s; }
+  [data-reveal].is-in:not(.seen) .yoy g:nth-child(6) rect { animation-delay: 0.2s; }
+  [data-reveal].is-in:not(.seen) .yoy g:nth-child(7) rect { animation-delay: 0.24s; }
+  [data-reveal].is-in:not(.seen) .yoy g:nth-child(8) rect { animation-delay: 0.28s; }
+  [data-reveal].is-in:not(.seen) .yoy g:nth-child(9) rect { animation-delay: 0.32s; }
+}
+
+@keyframes rise {
+  from { opacity: 0; translate: 0 18px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes bar-rise {
+  from { transform: scaleY(0.08); }
+  to { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal].wait,
+  [data-reveal="group"].wait > * {
+    opacity: 1;
+    translate: none;
+  }
+}
+
 @media (max-width: 900px) {
   .kpi-grid, .chart-grid, .partner-lead, .partner-list, .proof, .signature > div, .home-hero, .stat-band, .directory-head, .college-index, .footer-grid, .college li, .block-head, .activity-grid, .unit-grid { grid-template-columns: 1fr; }
   .solo-unit { flex-direction: column; align-items: flex-start; }

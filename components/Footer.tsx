@@ -1,7 +1,7 @@
 export function Footer() {
   return (
     <footer className="footer">
-      <div className="footer-grid">
+      <div className="footer-grid" data-reveal="item">
         <div>
           <p className="footer-kicker">University of Michigan</p>
           <p className="footer-name">Entrepreneurship &amp; Innovation</p>
