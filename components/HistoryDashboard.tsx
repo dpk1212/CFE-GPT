@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useChartPlay } from "@/components/ChartFrame";
 import { history, integer, latest, money, percent, prior, type HistoryYear } from "@/lib/history";
 
 type Mode = "cycle" | "academic";
@@ -276,6 +277,7 @@ function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; li
   const slot = innerW / labels.length;
   const leftTick = bars.axis ?? ((value: number) => bars.format(Math.round(value)));
   const rightTick = line ? (line.axis ?? ((value: number) => line.format(Math.round(value)))) : undefined;
+  const frame = useChartPlay(`${bars.name}|${labels.join("|")}`);
 
   const linePath = useMemo(() => {
     if (!line) return "";
@@ -291,7 +293,7 @@ function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; li
   }, [line, lineMax, innerH, slot]);
 
   return (
-    <div className="chart">
+    <div ref={frame} className="chart">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={bars.name}>
         <text x={pad.l} y={16} className="axis-title">{bars.name}</text>
         {line ? <text x={width - pad.r} y={16} textAnchor="end" className="axis-title right">{line.name}</text> : null}
@@ -313,6 +315,8 @@ function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; li
           return (
             <rect
               key={labels[index]}
+              className="series-bar"
+              style={{ animationDelay: `${index * 0.04}s` }}
               x={x}
               y={y}
               width={slot * 0.56}
@@ -323,13 +327,13 @@ function ComboChart({ labels, bars, line }: { labels: string[]; bars: Series; li
             />
           );
         })}
-        {line && linePath ? <polyline points={linePath} fill="none" stroke="#F15A24" strokeWidth="2.5" /> : null}
+        {line && linePath ? <polyline className="series-line" pathLength="1" points={linePath} fill="none" stroke="#F15A24" strokeWidth="2.5" style={{ animationDelay: "0.18s" }} /> : null}
         {line
           ? line.values.map((value, index) => {
               if (value == null) return null;
               const x = pad.l + slot * index + slot / 2;
               const y = pad.t + innerH - (value / lineMax) * innerH;
-              return <circle key={labels[index]} cx={x} cy={y} r={active === index ? 5 : 3.5} fill="#F15A24" />;
+              return <circle key={labels[index]} className="series-dot" style={{ animationDelay: `${0.55 + index * 0.035}s` }} cx={x} cy={y} r={active === index ? 5 : 3.5} fill="#F15A24" />;
             })
           : null}
         {labels.map((label, index) => (
@@ -361,6 +365,7 @@ function DualLine({ labels, a, b }: { labels: string[]; a: Series; b: Series }) 
   const innerH = height - pad.t - pad.b;
   const max = Math.max(...a.values.map((value) => value ?? 0), ...b.values.map((value) => value ?? 0), 1);
   const slot = innerW / labels.length;
+  const frame = useChartPlay(`${a.name}|${b.name}|${labels.join("|")}`);
   const path = (series: Series) =>
     series.values
       .map((value, index) => {
@@ -373,7 +378,7 @@ function DualLine({ labels, a, b }: { labels: string[]; a: Series; b: Series }) 
       .join(" ");
 
   return (
-    <div className="chart">
+    <div ref={frame} className="chart">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${a.name} and ${b.name}`}>
         <text x={pad.l} y={16} className="axis-title">Count</text>
         {[0, 0.5, 1].map((step) => {
@@ -385,8 +390,8 @@ function DualLine({ labels, a, b }: { labels: string[]; a: Series; b: Series }) 
             </g>
           );
         })}
-        <polyline points={path(a)} fill="none" stroke="#00274C" strokeWidth="2.5" />
-        <polyline points={path(b)} fill="none" stroke="#F15A24" strokeWidth="2.5" />
+        <polyline className="series-line" pathLength="1" points={path(a)} fill="none" stroke="#00274C" strokeWidth="2.5" />
+        <polyline className="series-line" pathLength="1" points={path(b)} fill="none" stroke="#F15A24" strokeWidth="2.5" style={{ animationDelay: "0.16s" }} />
         {labels.map((label, index) => {
           const x = pad.l + slot * index + slot / 2;
           return (

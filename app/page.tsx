@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChartFrame } from "@/components/ChartFrame";
 import { history, integer, latest, percent } from "@/lib/history";
 
 const directories = [
@@ -50,6 +51,7 @@ export default function HomePage() {
           <h2>Partners, year over year</h2>
           <p>U-M’s undergraduate schools, colleges, and units are listed on the Partners page.</p>
         </div>
+        <ChartFrame watch="partners-yoy">
         <svg className="yoy" viewBox="0 0 720 220" role="img" aria-label="Reporting partners by rankings year">
           {history.map((row, index) => {
             const slot = 720 / history.length;
@@ -60,13 +62,14 @@ export default function HomePage() {
             const current = row === latest;
             return (
               <g key={row.cycle}>
-                <rect x={x} y={y} width={barW} height={h} fill={current ? "#FFCB05" : "#00274C"} />
+                <rect className="series-bar" style={{ animationDelay: `${index * 0.045}s` }} x={x} y={y} width={barW} height={h} fill={current ? "#FFCB05" : "#00274C"} />
                 <text x={x + barW / 2} y={y - 8} textAnchor="middle" className="yoy-value">{row.partners}</text>
                 <text x={x + barW / 2} y={196} textAnchor="middle" className="yoy-label">’{row.cycle.slice(2)}</text>
               </g>
             );
           })}
         </svg>
+        </ChartFrame>
         <p className="fine">{history[0].partners} partners in {history[0].academic}. {latest.partners} in {latest.academic}. Maize marks the current year.</p>
       </section>
 

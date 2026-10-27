@@ -65,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${display.variable} ${sans.variable} ${serif.variable}`}>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: "try{if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('motion')}catch(e){}" }} />
         <a className="skip" href="#content">
           Skip to content
         </a>

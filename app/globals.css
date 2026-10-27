@@ -506,19 +506,27 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
   [data-reveal="group"].is-in:not(.seen) > *:nth-child(11) { animation-delay: 0.6s; }
   [data-reveal="group"].is-in:not(.seen) > *:nth-child(12) { animation-delay: 0.66s; }
 
-  [data-reveal].is-in:not(.seen) .yoy g rect {
+  html.motion .series-bar {
     transform-box: fill-box;
     transform-origin: bottom center;
-    animation: bar-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform: scaleY(0.08);
   }
-  [data-reveal].is-in:not(.seen) .yoy g:nth-child(2) rect { animation-delay: 0.04s; }
-  [data-reveal].is-in:not(.seen) .yoy g:nth-child(3) rect { animation-delay: 0.08s; }
-  [data-reveal].is-in:not(.seen) .yoy g:nth-child(4) rect { animation-delay: 0.12s; }
-  [data-reveal].is-in:not(.seen) .yoy g:nth-child(5) rect { animation-delay: 0.16s; }
-  [data-reveal].is-in:not(.seen) .yoy g:nth-child(6) rect { animation-delay: 0.2s; }
-  [data-reveal].is-in:not(.seen) .yoy g:nth-child(7) rect { animation-delay: 0.24s; }
-  [data-reveal].is-in:not(.seen) .yoy g:nth-child(8) rect { animation-delay: 0.28s; }
-  [data-reveal].is-in:not(.seen) .yoy g:nth-child(9) rect { animation-delay: 0.32s; }
+  html.motion .play .series-bar {
+    animation: bar-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  html.motion .series-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  html.motion .play .series-line {
+    animation: line-draw 1.05s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  html.motion .series-dot {
+    opacity: 0;
+  }
+  html.motion .play .series-dot {
+    animation: dot-in 0.35s ease forwards;
+  }
 }
 
 @keyframes rise {
@@ -529,12 +537,26 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
   from { transform: scaleY(0.08); }
   to { transform: scaleY(1); }
 }
+@keyframes line-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes dot-in {
+  to { opacity: 1; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   [data-reveal].wait,
   [data-reveal="group"].wait > * {
     opacity: 1;
     translate: none;
+  }
+  .series-bar,
+  .series-line,
+  .series-dot {
+    animation: none !important;
+    transform: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
   }
 }
 
