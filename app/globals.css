@@ -333,12 +333,20 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
 }
 .brief .eyebrow { color: var(--maize); letter-spacing: 0.18em; }
 .brief h1 {
-  max-width: 12ch;
-  margin: 0 0 1rem;
+  max-width: 15ch;
+  margin: 0.35rem 0 0.85rem;
   color: white;
-  font-size: clamp(3.4rem, 7vw, 6rem);
+  font-size: clamp(3.2rem, 6.4vw, 5.4rem);
   letter-spacing: 0.012em;
   line-height: 0.9;
+}
+.brief-hook {
+  max-width: 36rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.35rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: white;
 }
 .brief-lede {
   max-width: 38rem;
@@ -353,8 +361,16 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
   border-top: 1px solid rgba(255,255,255,0.14);
   border-bottom: 1px solid rgba(255,255,255,0.14);
 }
+.stat-caption {
+  margin: -0.15rem 0 0.9rem;
+  color: var(--maize);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
 .brief .fine {
-  max-width: 44rem;
+  max-width: 46rem;
   margin: 0 0 1.35rem;
   color: rgba(255,255,255,0.72);
   font-size: 0.95rem;
@@ -400,7 +416,7 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
 .yoy { width: 100%; height: auto; display: block; }
 .yoy-value { fill: var(--blue); font-size: 13px; font-weight: 700; font-family: var(--sans); }
 .yoy-label { fill: var(--muted); font-size: 12px; font-weight: 600; font-family: var(--sans); }
-.home-block .fine { margin: 0.7rem 0 0; color: var(--muted); font-size: 0.95rem; }
+.home-block .fine { max-width: 52rem; margin: 0.7rem 0 0; color: var(--muted); font-size: 0.95rem; }
 .activities .block-head { grid-template-columns: 1fr; }
 .activity-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
 .activity-grid a {
@@ -462,7 +478,9 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
   .page-hero .hero-rule,
   .brief .eyebrow,
   .brief h1,
+  .brief .brief-hook,
   .brief .brief-lede,
+  .brief .stat-caption,
   .brief .fine,
   .brief .hero-actions,
   .brief .stat-band article,
@@ -470,8 +488,10 @@ tr.current td:first-child { box-shadow: inset 3px 0 0 var(--maize); }
   .login-card {
     animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  .brief h1 { animation-delay: 0.05s; }
-  .brief .brief-lede { animation-delay: 0.12s; }
+  .brief h1 { animation-delay: 0.06s; }
+  .brief .brief-hook { animation-delay: 0.12s; }
+  .brief .brief-lede { animation-delay: 0.18s; }
+  .brief .stat-caption { animation-delay: 0.46s; }
   .brief .stat-band article:nth-child(1) { animation-delay: 0.18s; }
   .brief .stat-band article:nth-child(2) { animation-delay: 0.26s; }
   .brief .stat-band article:nth-child(3) { animation-delay: 0.34s; }

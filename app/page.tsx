@@ -14,10 +14,12 @@ export default function HomePage() {
   return (
     <>
       <section className="brief">
-        <p className="eyebrow">Princeton Review · Entrepreneur · 2026</p>
-        <h1>Undergraduate overview</h1>
+        <p className="eyebrow">Shared Progress Report</p>
+        <p className="eyebrow">Princeton Review &amp; Entrepreneur Magazine · Annual University Survey</p>
+        <h1>The Undergraduate Experience</h1>
+        <p className="brief-hook">Collaborating to power Michigan’s leadership in innovation and entrepreneurship.</p>
         <p className="brief-lede">
-          Collaboration across campus partners and with the Office of Budget and Planning contributes to our rankings. Undergraduate survey responses are coordinated by the Center for Entrepreneurship. Graduate survey responses are coordinated by the Zell Lurie Institute. All reporting partners directly share in Michigan’s recognition for excellence in innovation and entrepreneurship.
+          From campus partners and the Office of Budget and Planning to program survey coordination by the Center for Entrepreneurship (undergraduate) and the Zell Lurie Institute (graduate), Michigan’s top rankings belong to the entire community. Every partner plays a vital role in earning and sharing this annual recognition.
         </p>
         <div className="stat-band" aria-label="2026 undergraduate placement">
           <article>
@@ -37,6 +39,7 @@ export default function HomePage() {
             <span>Share of the undergraduate student body</span>
           </article>
         </div>
+        <p className="stat-caption">Undergraduate, globally</p>
         <p className="fine">
           Annual global rankings are <a href="https://www.princetonreview.com/college-rankings/top-entrepreneur" target="_blank" rel="noreferrer">announced</a> by survey publishers mid-November. At present, nearly 30 campus-wide undergraduate entrepreneurship and innovation units participate in U-M’s reporting efforts, resulting in year-over-year Top 10 global rankings since 2016!
         </p>
@@ -70,12 +73,12 @@ export default function HomePage() {
           })}
         </svg>
         </ChartFrame>
-        <p className="fine">{history[0].partners} partners in {history[0].academic}. {latest.partners} in {latest.academic}. Maize marks the current year.</p>
+        <p className="fine">What began with {history[0].partners} reporting partners in {history[0].academic} ({history[0].cycle} rankings) has expanded to nearly 30 contributors, driving U-M’s growth and recognition in the latest global rankings. This shared commitment creates a rising tide across campus by equipping our students with the skills, mindset, and world readiness to inspire the next generation of innovators. Maize marks the current year.</p>
       </section>
 
       <section className="home-block activities">
         <div className="block-head" data-reveal="item">
-          <h2>What is happening at Michigan</h2>
+          <h2>Get Involved &amp; Find Support</h2>
         </div>
         <div className="activity-grid" data-reveal="group">
           {directories.map((item) => (
