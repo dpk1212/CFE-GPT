@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useChartPlay } from "@/components/ChartFrame";
-import { history, integer, latest, money, percent, prior, type HistoryYear } from "@/lib/history";
+import { history, integer, latest, millions, money, percent, prior, type HistoryYear } from "@/lib/history";
 
 type Mode = "cycle" | "academic";
 
@@ -77,14 +77,14 @@ export function HistoryDashboard() {
     },
     {
       label: "Prize money, cumulative",
-      value: money(latest.prizeCumulative),
+      value: millions(latest.prizeCumulative),
       note: `${money(latest.prize)} this year`,
       delta: "",
       help: "Student prize money since 2017–18. This card is the running total. The chart shows each year’s awards beside that total.",
     },
     {
       label: "Grants and scholarships, cumulative",
-      value: money(latest.scholarshipDollarsCumulative),
+      value: millions(latest.scholarshipDollarsCumulative),
       note: `${integer(latest.scholarships)} grants and scholarships · ${money(latest.scholarshipDollars)} this year`,
       delta: awardDelta.label,
       help: "Scholarships and grants from any source. The change compares this year’s dollars with last year. The figure is the total since 2017–18.",
@@ -99,7 +99,7 @@ export function HistoryDashboard() {
           <article><strong>{integer(latest.enrollment)}</strong><span>Enrollment</span></article>
           <article><strong>{percent(latest.ugShare)}</strong><span>Undergraduate share</span></article>
           <article><strong>{integer(latest.partners)}</strong><span>Partners</span></article>
-          <article><strong>{money(Math.round((latest.prizeCumulative + latest.scholarshipDollarsCumulative) * 100) / 100)}</strong><span>Prize, grants, and scholarships</span></article>
+          <article><strong>{millions(latest.prizeCumulative + latest.scholarshipDollarsCumulative)}</strong><span>Prize, grants, and scholarships</span></article>
         </div>
       </section>
       <div className="dash-toolbar" data-reveal="item">

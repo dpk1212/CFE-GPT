@@ -46,6 +46,11 @@ export function money(value: number) {
   return value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: value % 1 === 0 ? 0 : 2 });
 }
 
+export function millions(value: number) {
+  const rounded = Math.round((value / 1_000_000) * 100) / 100;
+  return `$${rounded.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} million`;
+}
+
 export function integer(value: number) {
   return value.toLocaleString("en-US");
 }
