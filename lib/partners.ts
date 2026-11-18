@@ -15,10 +15,38 @@ export type College = {
 
 export const colleges: College[] = [
   {
+    id: "education",
+    name: "Marsal Family School of Education",
+    short: "Education",
+    units: [
+      {
+        name: "Center for Education, Design, Evaluation, and Research",
+        aka: "CEDER",
+        note: "Research and design aimed at strengthening education systems and how students learn.",
+        href: "https://marsal.umich.edu/ceder",
+      },
+      {
+        name: "Learning, Equity and Problem Solving for the Common Good",
+        aka: "LEAPS",
+        note: "A bachelor’s degree for students who lead, work on real problems, and turn ideas into public action.",
+        href: "https://marsal.umich.edu/academics-admissions/leaps",
+      },
+    ],
+  },
+  {
     id: "engineering",
     name: "College of Engineering",
     short: "Engineering",
     units: [
+      {
+        name: "ArtsEngine",
+        note: "A partnership across art, design, architecture, music, engineering, and information. In 2026, its funding programs moved to Engaged Michigan’s Arts-Integrated Grant, and Faculty Engineering/Arts Student Teams (FEAST) moved to the Arts Initiative.",
+        noteLinks: [
+          { label: "Arts-Integrated Grant", href: "https://engaged.umich.edu/michigan/artsengine-grant/" },
+          { label: "Arts Initiative", href: "https://arts.umich.edu/" },
+        ],
+        href: "https://artsengine.engin.umich.edu/",
+      },
       {
         name: "Center for Entrepreneurship",
         aka: "CFE",
@@ -32,9 +60,14 @@ export const colleges: College[] = [
         href: "https://csed.engin.umich.edu/",
       },
       {
+        name: "College of Engineering",
+        note: "The college home for undergraduate majors, departments, and programs.",
+        href: "https://www.engin.umich.edu/majors-programs/departments-programs/",
+      },
+      {
         name: "Honors & Engagement",
         note: "Our office leads core academic and leadership initiatives across Michigan Engineering—including the Honors Program, Engineering Global Leadership specialization, ENGR 110 and 499 courses, the Common Reading Experience, and representation in the Michigan Leadership Collaborative.",
-        href: "https://honors.engin.umich.edu/",
+        href: "https://honeng.engin.umich.edu/",
       },
       {
         name: "Multidisciplinary Design Program",
@@ -43,178 +76,27 @@ export const colleges: College[] = [
         href: "https://mdp.engin.umich.edu/",
       },
       {
-        name: "Wilson Student Team Project Center",
-        aka: "WSTPC",
-        note: "The Wilson Center offers student teams dedicated fabrication facilities, cross-disciplinary collaboration, and a platform to showcase hands-on engineering innovation.",
-        href: "https://teamprojects.engin.umich.edu/",
-      },
-      {
-        name: "ArtsEngine",
-        note: "A partnership across art, design, architecture, music, engineering, and information. In 2026, its funding programs moved to Engaged Michigan’s Arts-Integrated Grant, and Faculty Engineering/Arts Student Teams (FEAST) moved to the Arts Initiative.",
-        noteLinks: [
-          { label: "Arts-Integrated Grant", href: "https://engaged.umich.edu/michigan/artsengine-grant/" },
-          { label: "Arts Initiative", href: "https://arts.umich.edu/" },
-        ],
-        href: "https://artsengine.engin.umich.edu/",
-      },
-    ],
-  },
-  {
-    id: "ross",
-    name: "Stephen M. Ross School of Business",
-    short: "Ross",
-    units: [
-      {
-        name: "Zell Lurie Institute for Entrepreneurship",
-        aka: "ZLI",
-        note: "Grants, mentorship, and accelerators for student ventures, including venture capital. Coordinates Michigan’s graduate rankings.",
-        href: "https://zli.umich.edu/",
-      },
-      {
-        name: "Business + Tech",
-        note: "Programs and competitions where students, faculty, and industry meet at the intersection of business and technology.",
-        href: "https://businesstech.bus.umich.edu/",
-      },
-      {
-        name: "Business + Impact",
-        note: "Impact-driven programs at Ross, including Impact Studio, the Erb Institute, and the Detroit Neighborhood Entrepreneurs Project. Impact Studio partners with the Center for Entrepreneurship and the School of Information.",
-        href: "https://businessimpact.umich.edu/",
-      },
-      {
-        name: "Entrepreneurship Minor",
-        note: "A 15-credit minor open to undergraduates in any school. Ross staff administer and advise it.",
-        href: "https://entrepreneurship.umich.edu/degrees/",
-      },
-    ],
-  },
-  {
-    id: "tauber",
-    name: "College of Engineering and Ross School of Business",
-    short: "Engineering and Ross",
-    units: [
-      {
         name: "Tauber Institute for Global Operations",
         note: "A joint institute of Engineering and Ross. Students take on operations projects with industry partners.",
         href: "https://tauber.umich.edu/",
       },
       {
-        name: "Integrated Business and Engineering",
-        aka: "IBE",
-        note: "A joint dual degree from Ross and the College of Engineering. Students earn a BBA and an engineering degree.",
-        href: "https://business-engineering.umich.edu/",
+        name: "Wilson Student Team Project Center",
+        aka: "WSTPC",
+        note: "The Wilson Center offers student teams dedicated fabrication facilities, cross-disciplinary collaboration, and a platform to showcase hands-on engineering innovation.",
+        href: "https://teamprojects.engin.umich.edu/",
       },
     ],
   },
   {
-    id: "lsa",
-    name: "College of Literature, Science, and the Arts",
-    short: "LSA",
+    id: "entrepreneurship-minor",
+    name: "Minor in Entrepreneurship",
+    short: "Entrepreneurship Minor",
     units: [
       {
-        name: "College of Literature, Science, and the Arts",
-        note: "The liberal arts home for entrepreneurship coursework across its departments.",
-        href: "https://lsa.umich.edu/",
-      },
-      {
-        name: "Barger Leadership Institute",
-        aka: "BLI",
-        note: "Immersive leadership experiences in LSA, with courses, projects, and grants for students building a leadership practice.",
-        href: "https://lsa.umich.edu/bli",
-      },
-      {
-        name: "optiMize",
-        note: "A student-led community for social innovation, with a challenge that offers workshops, mentorship, and project funding.",
-      },
-      {
-        name: "Residential Education",
-        aka: "ResEd",
-        note: "Home of the Innovation Theme Community, a living-learning community for first-year students entering entrepreneurship.",
-      },
-    ],
-  },
-  {
-    id: "pite",
-    name: "College of Literature, Science, and the Arts and the School for Environment and Sustainability",
-    short: "LSA and SEAS",
-    units: [
-      {
-        name: "Program in the Environment",
-        aka: "PitE",
-        note: "A joint program of LSA and the School for Environment and Sustainability.",
-        href: "https://lsa.umich.edu/pite",
-      },
-    ],
-  },
-  {
-    id: "education",
-    name: "Marsal Family School of Education",
-    short: "Education",
-    units: [
-      {
-        name: "Center for Education Design, Evaluation, and Research",
-        aka: "CEDER",
-        note: "Research and design aimed at strengthening education systems and how students learn.",
-        href: "https://marsal.umich.edu/",
-      },
-      {
-        name: "Learning, Equity, and Problem Solving for the Public Good",
-        aka: "LEAPS",
-        note: "A bachelor’s degree for students who lead, work on real problems, and turn ideas into public action.",
-        href: "https://marsal.umich.edu/academics-admissions/leaps",
-      },
-    ],
-  },
-  {
-    id: "smtd",
-    name: "School of Music, Theatre & Dance",
-    short: "Music, Theatre & Dance",
-    units: [
-      {
-        name: "EXCEL Lab",
-        note: "Entrepreneurship, leadership, and career support for performing arts students, with mentoring and project funding.",
-        href: "https://smtd.umich.edu/excel-lab/",
-      },
-      {
-        name: "Performing Arts Management & Entrepreneurship",
-        aka: "PAME",
-        note: "A 15-credit minor in arts management and entrepreneurship, open to undergraduates across the university.",
-        href: "https://smtd.umich.edu/degree/minor-in-performing-arts-management-entrepreneurship/",
-      },
-    ],
-  },
-  {
-    id: "public-health",
-    name: "School of Public Health",
-    short: "Public Health",
-    units: [
-      {
-        name: "School of Public Health",
-        note: "Public health students and faculty in the undergraduate entrepreneurship community.",
-        href: "https://sph.umich.edu/",
-      },
-    ],
-  },
-  {
-    id: "stamps",
-    name: "Stamps School of Art & Design",
-    short: "Stamps",
-    units: [
-      {
-        name: "Stamps School of Art & Design",
-        note: "Art and design students in campus entrepreneurship and cross-school collaboration.",
-        href: "https://stamps.umich.edu/",
-      },
-    ],
-  },
-  {
-    id: "nursing",
-    name: "School of Nursing",
-    short: "Nursing",
-    units: [
-      {
-        name: "School of Nursing",
-        note: "The Healthcare Innovation Impact Program, with mentorship for nursing-led innovation.",
-        href: "https://nursing.umich.edu/",
+        name: "Minor in Entrepreneurship",
+        note: "A minor open to undergraduates in any school.",
+        href: "https://ent-minor.umich.edu/",
       },
     ],
   },
@@ -226,7 +108,156 @@ export const colleges: College[] = [
       {
         name: "School of Information",
         note: "The Engaged Learning Office offers hands-on entrepreneurship and innovation for information students.",
-        href: "https://www.si.umich.edu/",
+        href: "https://www.si.umich.edu/programs/engaged-learning/entrepreneurship-and-innovation-opportunities",
+      },
+    ],
+  },
+  {
+    id: "kinesiology",
+    name: "School of Kinesiology",
+    short: "Kinesiology",
+    units: [
+      {
+        name: "School of Kinesiology",
+        note: "Undergraduate programs in movement science, sport management, and applied exercise.",
+        href: "https://www.kines.umich.edu/",
+      },
+    ],
+  },
+  {
+    id: "lsa",
+    name: "College of Literature, Science, and the Arts",
+    short: "LSA",
+    units: [
+      {
+        name: "Barger Leadership Institute",
+        aka: "BLI",
+        note: "Immersive leadership experiences in LSA, with courses, projects, and grants for students building a leadership practice.",
+        href: "https://lsa.umich.edu/bli",
+      },
+      {
+        name: "optiMize",
+        note: "A student-led community for social innovation, with a challenge that offers workshops, mentorship, and project funding.",
+        href: "https://www.optimizemi.org/",
+      },
+      {
+        name: "Program in the Environment",
+        aka: "PitE",
+        note: "A joint program of LSA and the School for Environment and Sustainability.",
+        href: "https://lsa.umich.edu/pite",
+      },
+    ],
+  },
+  {
+    id: "smtd",
+    name: "School of Music, Theatre & Dance",
+    short: "Music, Theatre & Dance",
+    units: [
+      {
+        name: "Minor in Performing Arts Management & Entrepreneurship",
+        aka: "PAME",
+        note: "A 15-credit minor in arts management and entrepreneurship, open to undergraduates across the university.",
+        href: "https://smtd.umich.edu/degree/minor-in-performing-arts-management-entrepreneurship/",
+      },
+    ],
+  },
+  {
+    id: "nursing",
+    name: "School of Nursing",
+    short: "Nursing",
+    units: [
+      {
+        name: "Healthcare Innovation Impact Program",
+        aka: "HIIP",
+        note: "Mentorship and programming for nursing students leading health care innovation.",
+        href: "https://nursing.umich.edu/about/HiiP",
+      },
+    ],
+  },
+  {
+    id: "public-health",
+    name: "School of Public Health",
+    short: "Public Health",
+    units: [
+      {
+        name: "M-HEAL",
+        note: "Students design health care solutions with community partners, across public health, nursing, and engineering.",
+        href: "https://mheal.engin.umich.edu/",
+      },
+      {
+        name: "School of Public Health",
+        note: "Courses, projects, and stories from the school tagged for entrepreneurship.",
+        href: "https://sph.umich.edu/pursuit/results.html?tags=Entrepreneurship",
+      },
+    ],
+  },
+  {
+    id: "residential",
+    name: "Residential Education",
+    short: "Residential Education",
+    units: [
+      {
+        name: "Social Innovation Living-Learning Community",
+        note: "A living-learning community for students interested in social innovation.",
+        href: "https://housing.umich.edu/themes/innovation/",
+      },
+    ],
+  },
+  {
+    id: "ross",
+    name: "Stephen M. Ross School of Business",
+    short: "Ross",
+    units: [
+      {
+        name: "Business+Impact",
+        note: "A school-wide Ross initiative for shaping business practice to advance the common good.",
+        href: "https://businessimpact.umich.edu/",
+      },
+      {
+        name: "Business+Tech",
+        note: "Programs and competitions where students, faculty, and industry meet at the intersection of business and technology.",
+        href: "https://businesstech.bus.umich.edu/",
+      },
+      {
+        name: "Detroit Neighborhood Entrepreneurs Project",
+        aka: "DNEP",
+        note: "Pairs students with Detroit entrepreneurs and offers free support for neighborhood businesses.",
+        href: "https://detroitsmallbusiness.umich.edu/",
+      },
+      {
+        name: "Impact Studio",
+        note: "A Ross design community where students develop and launch early-stage ideas for social impact.",
+        href: "https://rossimpactstudio.com/",
+      },
+      {
+        name: "Zell Lurie Institute for Entrepreneurship",
+        aka: "ZLI",
+        note: "Grants, mentorship, and accelerators for student ventures, including venture capital. Coordinates Michigan’s graduate rankings.",
+        href: "https://zli.umich.edu/",
+      },
+    ],
+  },
+  {
+    id: "ross-seas",
+    name: "Ross School of Business and the School for Environment and Sustainability",
+    short: "Ross and SEAS",
+    units: [
+      {
+        name: "Erb Institute",
+        note: "A partnership of Ross and the School for Environment and Sustainability, with an undergraduate fellows program alongside its graduate work.",
+        href: "https://erb.umich.edu/about/about-erb",
+      },
+    ],
+  },
+  {
+    id: "stamps",
+    name: "Stamps School of Art & Design",
+    short: "Stamps",
+    units: [
+      {
+        name: "Stamps School of Art & Design",
+        note: "Art and design students in campus entrepreneurship and cross-school collaboration.",
+        href: "https://stamps.umich.edu/about",
       },
     ],
   },
@@ -237,8 +268,13 @@ export const colleges: College[] = [
     units: [
       {
         name: "Taubman College of Architecture & Urban Planning",
-        note: "Architecture and urban planning students in cross-campus design and entrepreneurship.",
-        href: "https://taubmancollege.umich.edu/",
+        note: "Architecture and urban planning students join cross-campus design and entrepreneurship through alumni panels, the Urban Technology minor, and the Real Estate Development minor.",
+        noteLinks: [
+          { label: "alumni panels", href: "https://taubmancollege.umich.edu/news/2025/11/13/taubman-college-alumni-share-entrepreneurship-lessons-with-students/" },
+          { label: "Urban Technology minor", href: "https://taubmancollege.umich.edu/academics/urban-and-regional-planning/bachelor-of-science-in-urban-technology/" },
+          { label: "Real Estate Development minor", href: "https://taubmancollege.umich.edu/academics/urban-and-regional-planning/real-estate-development-minor/" },
+        ],
+        href: "https://taubmancollege.umich.edu/about/",
       },
     ],
   },
