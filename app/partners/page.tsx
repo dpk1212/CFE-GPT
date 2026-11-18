@@ -28,6 +28,10 @@ export const metadata: Metadata = {
 };
 
 export default function PartnersPage() {
+  const partners = colleges
+    .flatMap((college) => college.units.map((unit) => ({ ...unit, home: college.name })))
+    .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" }));
+
   return (
     <article>
       <header className="page-hero">
@@ -41,50 +45,24 @@ export default function PartnersPage() {
           <p>
             The directory will grow as additional partners join the ecosystem.
           </p>
-          <nav className="partner-index" aria-label="Schools and groups">
-            {colleges.map((college) => (
-              <a key={college.id} href={`#${college.id}`}>
-                {college.short}
-                <em>{college.units.length}</em>
-              </a>
-            ))}
-          </nav>
         </div>
-        {colleges.map((college) => (
-          <section key={college.id} id={college.id} className="college">
-            <div className="college-head" data-reveal="item">
-              <h2>{college.name}</h2>
-              <span>{college.units.length === 1 ? "1 unit" : `${college.units.length} units`}</span>
-            </div>
-            {college.units.length === 1 && college.units[0].name === college.name ? (
-              <div className="solo-unit" data-reveal="item">
-                <UnitNote unit={college.units[0]} />
-                {college.units[0].href ? (
-                  <a className="unit-link" href={college.units[0].href} target="_blank" rel="noreferrer">
-                    Website
-                  </a>
-                ) : null}
+        <ul className="unit-grid" data-reveal="group">
+          {partners.map((unit) => (
+            <li key={unit.name}>
+              <div>
+                <strong>{unit.name}</strong>
+                {unit.aka ? <span className="aka">{unit.aka}</span> : null}
               </div>
-            ) : (
-            <ul className="unit-grid" data-reveal="group">
-              {college.units.map((unit) => (
-                <li key={unit.name}>
-                  <div>
-                    <strong>{unit.name}</strong>
-                    {unit.aka ? <span className="aka">{unit.aka}</span> : null}
-                  </div>
-                  <UnitNote unit={unit} />
-                  {unit.href ? (
-                    <a className="unit-link" href={unit.href} target="_blank" rel="noreferrer">
-                      Website
-                    </a>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-            )}
-          </section>
-        ))}
+              {unit.home === unit.name ? null : <p className="unit-home">{unit.home}</p>}
+              <UnitNote unit={unit} />
+              {unit.href ? (
+                <a className="unit-link" href={unit.href} target="_blank" rel="noreferrer">
+                  Website
+                </a>
+              ) : null}
+            </li>
+          ))}
+        </ul>
       </section>
     </article>
   );
