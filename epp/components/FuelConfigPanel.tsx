@@ -17,6 +17,7 @@ export function FuelConfigPanel() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [openStages, setOpenStages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -34,10 +35,26 @@ export function FuelConfigPanel() {
       setConfig(body.config);
       setLoaded(true);
     })();
+    try {
+      const stored = JSON.parse(localStorage.getItem("epp-admin-stage-open") ?? "{}") as unknown;
+      if (stored && typeof stored === "object") {
+        setOpenStages(stored as Record<string, boolean>);
+      }
+    } catch {
+      setOpenStages({});
+    }
     return () => {
       cancelled = true;
     };
   }, []);
+
+  function toggleStage(stageId: string) {
+    setOpenStages((current) => {
+      const next = { ...current, [stageId]: !current[stageId] };
+      localStorage.setItem("epp-admin-stage-open", JSON.stringify(next));
+      return next;
+    });
+  }
 
   function updateStage(stageId: string, patch: Partial<FuelStageConfig>) {
     setConfig((current) => ({
@@ -87,8 +104,8 @@ export function FuelConfigPanel() {
   return (
     <form className="fuel-config" onSubmit={save}>
       <div className="fuel-config-head">
-        <h2>Judge dashboard</h2>
-        <p>Choose the active review stage. Adjust titles, statuses, columns, and form type for each stage.</p>
+        <h2>Fuel desk</h2>
+        <p>Every approved judge sees the same queue. There is no per-judge assignment. Choose the active stage, then set its title, statuses, pipelines, columns, and form.</p>
       </div>
 
       <fieldset className="choice-set">
@@ -109,9 +126,22 @@ export function FuelConfigPanel() {
         </div>
       </fieldset>
 
-      {config.stages.map((stage) => (
+      {config.stages.map((stage) => {
+        const open = Boolean(openStages[stage.id]);
+        return (
         <section key={stage.id} className="fuel-stage-card">
-          <h3>{stage.id === "written" ? "Stage 1" : "Stage 2"}</h3>
+          <button
+            className="stage-toggle"
+            type="button"
+            aria-expanded={open}
+            aria-controls={`stage-panel-${stage.id}`}
+            onClick={() => toggleStage(stage.id)}
+          >
+            <span>{stage.id === "written" ? "Stage 1" : "Stage 2"}</span>
+            <strong>{stage.name}</strong>
+            <em>{open ? "Hide" : "Edit"}</em>
+          </button>
+          {open ? <div id={`stage-panel-${stage.id}`} className="stage-panel">
           <label>
             Title shown to judges
             <input
@@ -182,8 +212,10 @@ export function FuelConfigPanel() {
               </label>
             ))}
           </fieldset>
+          </div> : null}
         </section>
-      ))}
+        );
+      })}
 
       <button className="btn-maize-border" type="submit" disabled={busy}>
         {busy ? "Saving…" : "Save judge dashboard"}

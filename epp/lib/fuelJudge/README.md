@@ -136,7 +136,8 @@ Names only. Set them on the Vercel project `cfe-epp`. Do not commit them, do not
 | Name | Purpose |
 | --- | --- |
 | `FUEL_CRM_MODE` | `live` reads CFE Deals. Any other value, including unset, uses `catalog.ts`. |
-| `FUEL_CRM_WRITES` | `1` allows creates. Anything else keeps the submission in the local log. |
+| `FUEL_CRM_WRITES` | `1` allows Application_Review creates. Anything else keeps the submission in the local log. Leave this off. |
+| `FUEL_ADMIN_WRITES` | `1` allows an admin to update Deal fields from the Pipeline board. Requires `FUEL_CRM_MODE=live`. Anything else keeps the edit as a dry run. Separate from review creates. |
 | `FUEL_ZOHO_API_DOMAIN` | CFE CRM API host, no trailing slash. |
 | `FUEL_ZOHO_ACCOUNTS_URL` | CFE accounts host used to refresh a token. |
 | `FUEL_ZOHO_CLIENT_ID` | CFE OAuth client. |
@@ -153,7 +154,7 @@ Names only. Set them on the Vercel project `cfe-epp`. Do not commit them, do not
 
 A live read refreshes an access token with `grant_type=refresh_token` against `{FUEL_ZOHO_ACCOUNTS_URL}/oauth/v2/token`, then runs COQL. Missing env vars throw `Fuel CRM is not configured.` A failed refresh throws `Fuel CRM credentials were not accepted.` Tests delete `FUEL_CRM_MODE` and `FUEL_CRM_WRITES` before each case.
 
-Do not turn writes on for tests or for a production smoke test. Dale has to approve CRM writes.
+Do not turn `FUEL_CRM_WRITES` on for tests or for a production smoke test. Judge review creates stay off until Dale approves them. `FUEL_ADMIN_WRITES` is the separate switch for Deal field edits on the admin Pipeline board.
 
 ## EPP adaptations
 

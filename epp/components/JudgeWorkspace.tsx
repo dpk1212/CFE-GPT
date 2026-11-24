@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   COLUMN_LABELS,
   CONFIDENTIALITY_PARAGRAPH,
@@ -51,6 +51,20 @@ type PitchDraft = {
   internalNotes: string;
 };
 
+type SortKey = "projectName" | "stage" | "fundingRequested" | "totalReviews";
+
+const LINK_COLUMNS = new Set<FuelColumnId>([
+  "fuelApplication",
+  "budgetUrl",
+  "quadChart",
+  "technicalEvidence",
+  "traction",
+  "images",
+  "pitchDeck",
+  "video",
+  "additional",
+]);
+
 const emptyRatings = { problem: 0, solution: 0, market: 0, freedom: 0, execution: 0 };
 
 function blankWritten(): WrittenDraft {
@@ -81,59 +95,66 @@ function blankPitch(): PitchDraft {
 
 function money(value: number | null) {
   if (value == null) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 }
 
-function cellValue(application: FuelApplication, column: FuelColumnId) {
-  switch (column) {
-    case "totalReviews":
-      return application.totalReviews == null ? "—" : String(application.totalReviews);
-    case "projectName":
-      return application.projectName;
-    case "summary":
-      return application.summary || "—";
-    case "industries":
-      return application.industries || "—";
-    case "fundingRequested":
-      return money(application.fundingRequested);
-    case "initialFeedback":
-      return application.initialFeedback.length ? application.initialFeedback.join("\n\n") : "—";
-    default:
-      return null;
+function draftKey(email: string, stageId: string, applicationId: string) {
+  return `epp-fuel-draft:${email}:${stageId}:${applicationId}`;
+}
+
+function reviewedKey(email: string, stageId: string) {
+  return `epp-fuel-reviewed:${email}:${stageId}`;
+}
+
+function readReviewed(email: string, stageId: string) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(reviewedKey(email, stageId)) ?? "[]") as unknown;
+    return new Set(Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : []);
+  } catch {
+    return new Set<string>();
   }
 }
 
-function linkFor(application: FuelApplication, column: FuelColumnId): { href: string; label: string } | null {
-  switch (column) {
-    case "fuelApplication":
-      return application.fuelApplicationUrl
-        ? { href: application.fuelApplicationUrl, label: "Application" }
-        : null;
-    case "budgetUrl":
-      return application.budgetUrl ? { href: application.budgetUrl, label: "Budget" } : null;
-    case "quadChart":
-      return application.quadChartUrl ? { href: application.quadChartUrl, label: "Quad chart" } : null;
-    case "technicalEvidence":
-      return application.technicalEvidenceUrl
-        ? { href: application.technicalEvidenceUrl, label: "Evidence" }
-        : null;
-    case "traction":
-      return application.tractionUrl ? { href: application.tractionUrl, label: "Traction" } : null;
-    case "images":
-      return application.imagesUrl ? { href: application.imagesUrl, label: "Images" } : null;
-    case "pitchDeck":
-      return application.pitchDeckUrl ? { href: application.pitchDeckUrl, label: "Deck" } : null;
-    case "video":
-      return application.videoUrl ? { href: application.videoUrl, label: "Video" } : null;
-    case "additional":
-      return application.additionalUrl ? { href: application.additionalUrl, label: "File" } : null;
-    default:
-      return null;
-  }
+function linkFor(application: FuelApplication, column: FuelColumnId) {
+  const map: Partial<Record<FuelColumnId, string | null>> = {
+    fuelApplication: application.fuelApplicationUrl,
+    budgetUrl: application.budgetUrl,
+    quadChart: application.quadChartUrl,
+    technicalEvidence: application.technicalEvidenceUrl,
+    traction: application.tractionUrl,
+    images: application.imagesUrl,
+    pitchDeck: application.pitchDeckUrl,
+    video: application.videoUrl,
+    additional: application.additionalUrl,
+  };
+  const href = map[column];
+  return href ? { href, label: COLUMN_LABELS[column] } : null;
+}
+
+function writtenBlank(draft: WrittenDraft) {
+  return (
+    !draft.conflict &&
+    !draft.confidentiality &&
+    !Object.values(draft.ratings).some(Boolean) &&
+    !Object.values(draft.feedback).some((value) => value?.trim()) &&
+    !draft.strengths.trim() &&
+    !draft.improvements.trim() &&
+    !draft.advance &&
+    !draft.coach.trim() &&
+    !draft.internalNotes.trim()
+  );
+}
+
+function pitchBlank(draft: PitchDraft) {
+  return (
+    !draft.conflict &&
+    !draft.confidentiality &&
+    !draft.didWell.trim() &&
+    !draft.prioritize.trim() &&
+    !draft.coach.trim() &&
+    !draft.funding &&
+    !draft.internalNotes.trim()
+  );
 }
 
 export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
@@ -147,38 +168,167 @@ export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
   const [payloadPreview, setPayloadPreview] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "projectName", dir: "asc" });
+  const [reviewed, setReviewed] = useState<Set<string>>(new Set());
+  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
+  const [draftNote, setDraftNote] = useState("");
+  const loadedSnapshot = useRef("");
+
+  function load() {
+    setLoading(true);
+    setLoadError("");
+    return fetch("/api/judge/dashboard")
+      .then(async (response) => {
+        const body = (await response.json().catch(() => null)) as (DashboardPayload & { error?: string }) | null;
+        if (!response.ok || !body || body.error || !body.stage) {
+          setLoadError(body?.error ?? "The Fuel desk could not be loaded.");
+          setDashboard(null);
+          return;
+        }
+        setDashboard(body);
+        setReviewed(readReviewed(judgeEmail, body.stage.id));
+      })
+      .catch(() => setLoadError("The Fuel desk could not be loaded."))
+      .finally(() => setLoading(false));
+  }
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const response = await fetch("/api/judge/dashboard");
-      const body = (await response.json().catch(() => null)) as (DashboardPayload & { error?: string }) | null;
-      if (cancelled) return;
-      if (!response.ok || !body || body.error) {
-        setLoadError(body?.error ?? "The Fuel desk could not be loaded.");
-        return;
-      }
-      setDashboard(body);
-      setSelectedId(body.applications[0]?.id ?? null);
-    })();
+    setLoading(true);
+    fetch("/api/judge/dashboard")
+      .then(async (response) => {
+        const body = (await response.json().catch(() => null)) as (DashboardPayload & { error?: string }) | null;
+        if (cancelled) return;
+        if (!response.ok || !body || body.error || !body.stage) {
+          setLoadError(body?.error ?? "The Fuel desk could not be loaded.");
+          return;
+        }
+        setDashboard(body);
+        setReviewed(readReviewed(judgeEmail, body.stage.id));
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError("The Fuel desk could not be loaded.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [judgeEmail]);
 
-  const selected = useMemo(
-    () => dashboard?.applications.find((row) => row.id === selectedId) ?? null,
-    [dashboard, selectedId],
-  );
+  const rows = useMemo(() => {
+    const applications = dashboard?.applications ?? [];
+    const needle = query.trim().toLowerCase();
+    const filtered = needle
+      ? applications.filter((application) =>
+          [application.projectName, application.summary, application.industries, application.stage]
+            .join(" ")
+            .toLowerCase()
+            .includes(needle),
+        )
+      : applications;
+    const direction = sort.dir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const left = sort.key === "fundingRequested" || sort.key === "totalReviews" ? (a[sort.key] ?? -1) : a[sort.key].toLowerCase();
+      const right = sort.key === "fundingRequested" || sort.key === "totalReviews" ? (b[sort.key] ?? -1) : b[sort.key].toLowerCase();
+      if (left < right) return -1 * direction;
+      if (left > right) return 1 * direction;
+      return a.projectName.localeCompare(b.projectName);
+    });
+  }, [dashboard, query, sort]);
 
-  function selectApplication(id: string) {
-    setSelectedId(id);
+  useEffect(() => {
+    if (!rows.length) return;
+    if (selectedId && rows.some((row) => row.id === selectedId)) return;
+    setSelectedId(rows[0].id);
+  }, [rows, selectedId]);
+
+  const selected = dashboard?.applications.find((row) => row.id === selectedId) ?? null;
+  const selectedIndex = rows.findIndex((row) => row.id === selectedId);
+  const reviewedCount = dashboard?.applications.filter((row) => reviewed.has(row.id)).length ?? 0;
+  const openCount = (dashboard?.applications.length ?? 0) - reviewedCount;
+
+  useEffect(() => {
+    if (!dashboard || !selectedId) return;
+    const key = draftKey(judgeEmail, dashboard.stage.id, selectedId);
+    let nextWritten = blankWritten();
+    let nextPitch = blankPitch();
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) ?? "null") as
+        | { form: "written"; draft: WrittenDraft }
+        | { form: "pitch"; draft: PitchDraft }
+        | null;
+      if (saved?.form === "written") {
+        nextWritten = { ...blankWritten(), ...saved.draft, ratings: { ...emptyRatings, ...saved.draft.ratings } };
+      }
+      if (saved?.form === "pitch") nextPitch = { ...blankPitch(), ...saved.draft };
+    } catch {
+      nextWritten = blankWritten();
+      nextPitch = blankPitch();
+    }
+    setWritten(nextWritten);
+    setPitch(nextPitch);
+    loadedSnapshot.current =
+      dashboard.stage.form === "written"
+        ? JSON.stringify({ form: "written", draft: nextWritten })
+        : JSON.stringify({ form: "pitch", draft: nextPitch });
     setFormStep(1);
-    setWritten(blankWritten());
-    setPitch(blankPitch());
-    setMessage("");
+    setHydratedFor(selectedId);
+    setDraftNote("");
     setError("");
+    setMessage("");
     setPayloadPreview(null);
+  }, [dashboard, judgeEmail, selectedId]);
+
+  useEffect(() => {
+    if (!dashboard || !selectedId || hydratedFor !== selectedId) return;
+    const key = draftKey(judgeEmail, dashboard.stage.id, selectedId);
+    const handle = window.setTimeout(() => {
+      const blank = dashboard.stage.form === "written" ? writtenBlank(written) : pitchBlank(pitch);
+      const payload = dashboard.stage.form === "written" ? { form: "written" as const, draft: written } : { form: "pitch" as const, draft: pitch };
+      const serialized = JSON.stringify(payload);
+      if (blank) {
+        localStorage.removeItem(key);
+        loadedSnapshot.current = serialized;
+        return;
+      }
+      if (serialized === loadedSnapshot.current) return;
+      localStorage.setItem(key, serialized);
+      loadedSnapshot.current = serialized;
+      setDraftNote("Draft saved on this browser.");
+    }, 450);
+    return () => window.clearTimeout(handle);
+  }, [dashboard, hydratedFor, judgeEmail, pitch, selectedId, written]);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select")) return;
+      const inQueue = Boolean(target?.closest(".desk-queue"));
+      if (target && target !== document.body && !inQueue) return;
+      if (!rows.length) return;
+      if (event.key !== "j" && event.key !== "k" && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      event.preventDefault();
+      const current = Math.max(0, rows.findIndex((row) => row.id === selectedId));
+      const next = event.key === "j" || event.key === "ArrowDown" ? Math.min(rows.length - 1, current + 1) : Math.max(0, current - 1);
+      setSelectedId(rows[next]?.id ?? null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [rows, selectedId]);
+
+  function toggleSort(key: SortKey) {
+    setSort((current) => (current.key === key ? { key, dir: current.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+  }
+
+  function move(offset: number) {
+    if (!rows.length) return;
+    const current = Math.max(0, rows.findIndex((row) => row.id === selectedId));
+    const next = Math.min(rows.length - 1, Math.max(0, current + offset));
+    setSelectedId(rows[next]?.id ?? null);
   }
 
   async function submitReview(event: FormEvent) {
@@ -187,7 +337,6 @@ export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
     setBusy(true);
     setError("");
     setMessage("");
-    setPayloadPreview(null);
     const payload =
       dashboard.stage.form === "written"
         ? ({
@@ -231,246 +380,292 @@ export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
       setError(body?.error ?? "The review was not saved.");
       return;
     }
-    if (body?.wrote) {
-      setMessage(`Review submitted for ${body.project}.`);
-    } else {
-      setMessage(
-        `Review recorded for ${body?.project ?? selected.projectName}. CRM writes are off — this is a dry run of the Application_Review payload.`,
-      );
-      setPayloadPreview(body?.record ?? null);
-    }
-    setFormStep(1);
+    const nextReviewed = new Set(reviewed);
+    nextReviewed.add(selected.id);
+    setReviewed(nextReviewed);
+    localStorage.setItem(reviewedKey(judgeEmail, dashboard.stage.id), JSON.stringify([...nextReviewed]));
+    localStorage.removeItem(draftKey(judgeEmail, dashboard.stage.id, selected.id));
     setWritten(blankWritten());
     setPitch(blankPitch());
+    setFormStep(1);
+    setDraftNote("");
+    setPayloadPreview(body?.wrote ? null : (body?.record ?? null));
+    setMessage(
+      body?.wrote
+        ? `Review submitted for ${body.project}.`
+        : `Review recorded for ${body?.project ?? selected.projectName}. CRM writes are off, so this stayed on the desk.`,
+    );
+    const position = rows.findIndex((row) => row.id === selected.id);
+    const following = rows[position + 1];
+    if (following) setSelectedId(following.id);
   }
 
-  if (loadError) {
+  if (loading) {
     return (
-      <div className="judge-shell">
-        <p className="form-note" role="alert">
-          {loadError}
-        </p>
+      <div className="desk-page" aria-busy="true">
+        <p className="desk-status">Loading the Fuel desk.</p>
       </div>
     );
   }
 
-  if (!dashboard) {
+  if (loadError || !dashboard) {
     return (
-      <div className="judge-shell">
-        <p className="quiet">Loading the Fuel review desk…</p>
+      <div className="desk-page">
+        <p className="form-note" role="alert">{loadError || "The Fuel desk could not be loaded."}</p>
+        <button className="btn" type="button" onClick={() => void load()}>Try again</button>
       </div>
     );
   }
 
   const formId: FuelFormId = dashboard.stage.form;
-  const stepLabels = FORM_STEPS[formId];
+  const columns = new Set(dashboard.stage.columns);
+  const materials = dashboard.stage.columns
+    .filter((column) => LINK_COLUMNS.has(column))
+    .map((column) => ({ column, link: selected ? linkFor(selected, column) : null }));
 
   return (
-    <div className="judge-shell">
-      <header className="judge-banner">
-        <div className="judge-brand">
-          <p className="fuel-mark">
-            <span>Fuel</span> Funding Student Ventures
-          </p>
+    <div className="desk-page">
+      <header className="desk-stage">
+        <div>
+          <p className="desk-kicker">Fuel</p>
           <h1>{dashboard.stage.name}</h1>
-          <p className="judge-lede">
-            Signed in as {judgeName} · {judgeEmail}. Select an application on the left, complete the
-            review on the right, and submit.
-          </p>
+          <p className="desk-statuses">{dashboard.stage.statuses.join(" · ")}</p>
         </div>
-        <div className="judge-meta">
-          <strong>M | CFE</strong>
-          <span>{dashboard.mode === "live" ? "Live CRM read" : "Sample catalog"}</span>
-          <span>{dashboard.writesEnabled ? "CRM writes on" : "Dry-run submissions"}</span>
-        </div>
+        <dl className="desk-counts">
+          <div>
+            <dt>In this stage</dt>
+            <dd>{dashboard.applications.length}</dd>
+          </div>
+          <div>
+            <dt>Reviewed by you</dt>
+            <dd>{reviewedCount}</dd>
+          </div>
+          <div>
+            <dt>Still open</dt>
+            <dd>{openCount}</dd>
+          </div>
+        </dl>
       </header>
-      <p className="judge-source">
+      <p className="desk-note">
+        Signed in as {judgeName}. Every approved judge sees this queue.
         {dashboard.mode === "mock"
-          ? "Sample applications are on screen so the review desk can be used before Fuel CRM credentials are connected. Nothing on this screen is written to Zoho."
+          ? " These are sample applications. Nothing on this desk is written to Zoho."
           : dashboard.writesEnabled
-            ? "Applications are read from Fuel CRM. Submitting a review writes an Application Review."
-            : "Applications are read from Fuel CRM. Submitting a review stays in the EPP store until CRM writes are turned on."}
+            ? " Applications are read from Fuel CRM."
+            : " Applications are read from Fuel CRM. A submitted review stays on this desk until CRM writes are turned on."}
       </p>
 
-      <div className="judge-split">
-        <section className="judge-table-panel" aria-label="Applications for review">
-          <div className="judge-table-head">
-            <h2>Fuel Applications for Review</h2>
-            <p>
-              {dashboard.applications.length}{" "}
-              {dashboard.applications.length === 1 ? "application" : "applications"} in this stage
-            </p>
+      <div className="desk-workspace">
+        <section className="desk-queue" aria-label="Applications for review">
+          <div className="desk-queue-bar">
+            <h2>Applications</h2>
+            <label className="desk-search">
+              <span className="sr-only">Search applications</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search name, summary, or industry"
+                type="search"
+              />
+            </label>
           </div>
-          <div className="judge-table-wrap">
-            <table className="judge-table">
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  {dashboard.stage.columns.map((column) => (
-                    <th key={column}>{COLUMN_LABELS[column]}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {dashboard.applications.length === 0 ? (
-                  <tr>
-                    <td colSpan={dashboard.stage.columns.length + 1}>No applications match this stage.</td>
-                  </tr>
-                ) : (
-                  dashboard.applications.map((application, index) => (
-                    <tr
-                      key={application.id}
-                      className={application.id === selectedId ? "is-selected" : undefined}
-                      onClick={() => selectApplication(application.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          selectApplication(application.id);
-                        }
-                      }}
-                      tabIndex={0}
-                    >
-                      <td>{index + 1}</td>
-                      {dashboard.stage.columns.map((column) => {
-                        const link = linkFor(application, column);
-                        const text = cellValue(application, column);
-                        return (
-                          <td key={column}>
-                            {link ? (
-                              <a
-                                href={link.href}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                {link.label}
-                              </a>
-                            ) : column === "initialFeedback" ? (
-                              <span className="feedback-cell">
-                                {application.initialFeedback.length
-                                  ? text
-                                  : "No stage 1 feedback yet"}
-                              </span>
-                            ) : (
-                              text
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="desk-sort">
+            <span>Sort</span>
+            <SortButton label="Project" sortKey="projectName" sort={sort} onSort={toggleSort} />
+            <SortButton label="Status" sortKey="stage" sort={sort} onSort={toggleSort} />
+            {columns.has("fundingRequested") ? <SortButton label="Funding" sortKey="fundingRequested" sort={sort} onSort={toggleSort} /> : null}
+            {columns.has("totalReviews") ? <SortButton label="Reviews" sortKey="totalReviews" sort={sort} onSort={toggleSort} /> : null}
           </div>
-        </section>
-
-        <section className="judge-form-panel" aria-label="Review form">
-          {!selected ? (
-            <p className="quiet form-empty">Select an application to begin a review.</p>
+          {dashboard.applications.length === 0 ? (
+            <p className="desk-empty">No applications are in {dashboard.stage.statuses.join(" or ")}.</p>
+          ) : rows.length === 0 ? (
+            <p className="desk-empty">No applications match that search.</p>
           ) : (
-            <form className="judge-form" onSubmit={submitReview}>
-              <div className="judge-form-head">
-                <p className="eyebrow dark">Fuel application review</p>
-                <h2>{selected.projectName}</h2>
-                <p className="quiet">{selected.summary}</p>
-                <ol className="form-steps" aria-label="Review steps">
-                  {stepLabels.map((label, index) => {
-                    const step = index + 1;
+            <div className="desk-table-wrap">
+              <table className="desk-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Project</th>
+                    {columns.has("fundingRequested") ? <th scope="col">Funding</th> : null}
+                    {columns.has("totalReviews") ? <th scope="col">Reviews</th> : null}
+                    <th scope="col">You</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((application) => {
+                    const mine = reviewed.has(application.id);
+                    const active = application.id === selectedId;
                     return (
-                      <li key={label} className={formStep === step ? "on" : formStep > step ? "done" : undefined}>
-                        <button type="button" onClick={() => setFormStep(step)}>
-                          <em>{step}</em>
-                          <span>{label}</span>
-                        </button>
-                      </li>
+                      <tr
+                        key={application.id}
+                        className={active ? "is-selected" : undefined}
+                        aria-selected={active}
+                        onClick={() => setSelectedId(application.id)}
+                      >
+                        <th scope="row">
+                          <button type="button" className="desk-name" onClick={() => setSelectedId(application.id)}>
+                            {application.projectName}
+                          </button>
+                          {columns.has("summary") ? <span className="desk-summary">{application.summary}</span> : null}
+                          <span className="status-chip">{application.stage}</span>
+                        </th>
+                        {columns.has("fundingRequested") ? <td>{money(application.fundingRequested)}</td> : null}
+                        {columns.has("totalReviews") ? <td>{application.totalReviews ?? "—"}</td> : null}
+                        <td>{mine ? <span className="mine-chip">Reviewed</span> : "—"}</td>
+                      </tr>
                     );
                   })}
-                </ol>
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="desk-keys">J and K move through the queue when you are not typing in a field.</p>
+        </section>
+
+        <section className="desk-read" aria-label="Application and review">
+          {!selected ? (
+            <p className="desk-empty">Select an application to read it and start a review.</p>
+          ) : (
+            <>
+              <div className="read-head">
+                <div>
+                  <p className="eyebrow">Application {selectedIndex >= 0 ? selectedIndex + 1 : "—"} of {rows.length}</p>
+                  <h2>{selected.projectName}</h2>
+                  <span className="status-chip">{selected.stage}</span>
+                </div>
+                <div className="read-move">
+                  <button className="btn-line" type="button" onClick={() => move(-1)} disabled={selectedIndex <= 0}>Previous</button>
+                  <button className="btn-line" type="button" onClick={() => move(1)} disabled={selectedIndex < 0 || selectedIndex >= rows.length - 1}>Next</button>
+                </div>
               </div>
+              <p className="read-summary">{selected.summary || "No one-sentence summary is on this application."}</p>
+              <dl className="read-facts">
+                {columns.has("industries") ? (
+                  <div><dt>Industries</dt><dd>{selected.industries || "—"}</dd></div>
+                ) : null}
+                {columns.has("fundingRequested") ? (
+                  <div><dt>Funding requested</dt><dd>{money(selected.fundingRequested)}</dd></div>
+                ) : null}
+                {columns.has("totalReviews") ? (
+                  <div><dt>Total reviews</dt><dd>{selected.totalReviews ?? "—"}</dd></div>
+                ) : null}
+              </dl>
+              {materials.length ? (
+                <ul className="read-links">
+                  {materials.map(({ column, link }) => (
+                    <li key={column}>
+                      {link ? (
+                        <a href={link.href} target="_blank" rel="noreferrer">
+                          {link.label}
+                          <span aria-hidden="true"> ↗</span>
+                          <span className="sr-only"> (opens in a new tab)</span>
+                        </a>
+                      ) : (
+                        <span>{COLUMN_LABELS[column]} is not attached</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {columns.has("initialFeedback") ? (
+                <div className="read-feedback">
+                  <h3>Initial judge feedback</h3>
+                  {selected.initialFeedback.length ? (
+                    selected.initialFeedback.map((note) => <p key={note}>{note}</p>)
+                  ) : (
+                    <p>No stage 1 feedback is on this application yet.</p>
+                  )}
+                </div>
+              ) : null}
 
-              {formId === "written" ? (
-                <WrittenForm
-                  step={formStep}
-                  draft={written}
-                  judgeName={judgeName}
-                  judgeEmail={judgeEmail}
-                  projectName={selected.projectName}
-                  onChange={setWritten}
-                />
-              ) : (
-                <PitchForm
-                  step={formStep}
-                  draft={pitch}
-                  judgeName={judgeName}
-                  judgeEmail={judgeEmail}
-                  projectName={selected.projectName}
-                  onChange={setPitch}
-                />
-              )}
-
-              <div className="judge-form-actions">
-                {formStep > 1 ? (
-                  <button className="btn-line" type="button" onClick={() => setFormStep((step) => step - 1)}>
-                    Back
-                  </button>
+              <form className="judge-form" onSubmit={submitReview}>
+                <div className="judge-form-head">
+                  <p className="eyebrow">Step {formStep} of {FORM_STEPS[formId].length}</p>
+                  <ol className="form-steps" aria-label="Review steps">
+                    {FORM_STEPS[formId].map((label, index) => {
+                      const step = index + 1;
+                      return (
+                        <li key={label} className={formStep === step ? "on" : formStep > step ? "done" : undefined}>
+                          <button type="button" onClick={() => setFormStep(step)}>
+                            <em>{step}</em>
+                            <span>{label}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                  {draftNote ? <p className="draft-note" role="status">{draftNote}</p> : null}
+                </div>
+                {formId === "written" ? (
+                  <WrittenForm step={formStep} draft={written} judgeName={judgeName} judgeEmail={judgeEmail} projectName={selected.projectName} onChange={setWritten} />
                 ) : (
-                  <span />
+                  <PitchForm step={formStep} draft={pitch} judgeName={judgeName} judgeEmail={judgeEmail} projectName={selected.projectName} onChange={setPitch} />
                 )}
-                {formStep < 3 ? (
-                  <button
-                    className="btn-maize-border"
-                    type="button"
-                    onClick={() => {
-                      if (formStep === 1) {
-                        if (formId === "written" && !written.conflict) {
-                          setError("Choose whether you have a conflict of interest.");
-                          return;
-                        }
-                        if (!(formId === "written" ? written.confidentiality : pitch.confidentiality)) {
+                <div className="judge-form-actions">
+                  {formStep > 1 ? (
+                    <button className="btn-line" type="button" onClick={() => setFormStep((step) => step - 1)}>Back</button>
+                  ) : <span />}
+                  {formStep < 3 ? (
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => {
+                        if (formStep === 1 && !(formId === "written" ? written.confidentiality : pitch.confidentiality)) {
                           setError("The confidentiality agreement is required.");
                           return;
                         }
-                      }
-                      if (formStep === 2 && formId === "written") {
-                        if (Object.values(written.ratings).some((value) => !value)) {
+                        if (formStep === 1 && formId === "written" && !written.conflict) {
+                          setError("Choose whether you have a conflict of interest.");
+                          return;
+                        }
+                        if (formStep === 2 && formId === "written" && Object.values(written.ratings).some((value) => !value)) {
                           setError("Each category needs a rating from 1 to 5.");
                           return;
                         }
-                      }
-                      setError("");
-                      setFormStep((step) => step + 1);
-                    }}
-                  >
-                    Continue
-                  </button>
-                ) : (
-                  <button className="btn-maize-border" type="submit" disabled={busy}>
-                    {busy ? "Submitting…" : formId === "pitch" ? "Submit recommendation" : "Submit review"}
-                  </button>
-                )}
-              </div>
-              {error ? (
-                <p className="form-note" role="alert">
-                  {error}
-                </p>
-              ) : null}
-              {message ? (
-                <p className="form-note success" role="status">
-                  {message}
-                </p>
-              ) : null}
-              {payloadPreview ? (
-                <details className="payload-preview" open>
-                  <summary>Application_Review payload (dry run)</summary>
-                  <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
-                </details>
-              ) : null}
-            </form>
+                        setError("");
+                        setFormStep((step) => step + 1);
+                      }}
+                    >
+                      Continue
+                    </button>
+                  ) : (
+                    <button className="btn" type="submit" disabled={busy}>{busy ? "Submitting…" : formId === "pitch" ? "Submit recommendation" : "Submit review"}</button>
+                  )}
+                </div>
+                {error ? <p className="form-note" role="alert">{error}</p> : null}
+                {message ? <p className="form-note" role="status">{message}</p> : null}
+                {payloadPreview ? (
+                  <details className="payload-preview">
+                    <summary>Dry-run payload</summary>
+                    <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
+                  </details>
+                ) : null}
+              </form>
+            </>
           )}
         </section>
       </div>
     </div>
+  );
+}
+
+function SortButton({
+  label,
+  sortKey,
+  sort,
+  onSort,
+}: {
+  label: string;
+  sortKey: SortKey;
+  sort: { key: SortKey; dir: "asc" | "desc" };
+  onSort: (key: SortKey) => void;
+}) {
+  const active = sort.key === sortKey;
+  return (
+    <button type="button" aria-pressed={active} onClick={() => onSort(sortKey)}>
+      {label}
+      {active ? <span aria-hidden="true">{sort.dir === "asc" ? " ↑" : " ↓"}</span> : null}
+    </button>
   );
 }
 
@@ -495,7 +690,7 @@ function IdentityBlock({
 }) {
   return (
     <div className="form-page">
-      <h3>Judge&apos;s contact info</h3>
+      <h3>Contact info</h3>
       <div className="identity-grid">
         <label>
           Name
@@ -511,10 +706,9 @@ function IdentityBlock({
         </label>
       </div>
       <fieldset className="choice-set">
-        <legend>Conflict of interest?{conflictRequired ? "" : " (optional)"}</legend>
+        <legend>Conflict of interest{conflictRequired ? "" : " (optional)"}</legend>
         <p className="field-help">
-          Do you think you have a conflict of interest with this project? If so, please contact Alison
-          Smith, <a href="mailto:alisone@umich.edu">alisone@umich.edu</a>.
+          If you have a conflict with this project, contact Alison Smith at <a href="mailto:alisone@umich.edu">alisone@umich.edu</a>.
         </p>
         <label className="radio-line">
           <input type="radio" name="conflict" checked={conflict === "Yes"} onChange={() => onConflict("Yes")} />
@@ -529,16 +723,8 @@ function IdentityBlock({
         <h4>Maintaining students&apos; confidentiality</h4>
         <p>{CONFIDENTIALITY_PARAGRAPH}</p>
         <label className="check-line">
-          <input
-            type="checkbox"
-            checked={confidentiality}
-            onChange={(event) => onConfidentiality(event.target.checked)}
-            required
-          />
-          <span>
-            I agree to maintain the confidentiality of all information related to the students&apos;
-            ventures presented during the Fuel program.
-          </span>
+          <input type="checkbox" checked={confidentiality} onChange={(event) => onConfidentiality(event.target.checked)} required />
+          <span>I agree to maintain the confidentiality of all information related to the students&apos; ventures presented during the Fuel program.</span>
         </label>
       </div>
     </div>
@@ -577,36 +763,26 @@ function WrittenForm({
   if (step === 2) {
     return (
       <div className="form-page">
-        <h3>Ratings and feedback</h3>
-        <div className="scale-legend">
-          <p>Rate each category from 1 to 5.</p>
-          <ul>
-            {RATING_SCALE.map((option) => (
-              <li key={option.value}>
-                <strong>{option.value}</strong> {option.label}
-              </li>
-            ))}
-          </ul>
-        </div>
+        <h3>Ratings</h3>
+        <ul className="scale-legend">
+          {RATING_SCALE.map((option) => (
+            <li key={option.value}><strong>{option.value}</strong> {option.label}</li>
+          ))}
+        </ul>
         <div className="rubric-list">
           {WRITTEN_RUBRIC.map((item) => (
             <fieldset key={item.key} className="rubric-card">
               <legend>{item.title}</legend>
               <p className="field-help">{item.hint}</p>
-              <p className="field-help consider">Judges, please consider: {item.consider}</p>
-              <div className="rating-row">
+              <p className="field-help">{item.consider}</p>
+              <div className="rating-row" role="radiogroup" aria-label={item.title}>
                 {RATING_SCALE.map((option) => (
                   <label key={option.value} className={draft.ratings[item.key] === option.value ? "on" : undefined}>
                     <input
                       type="radio"
                       name={`rating-${item.key}`}
                       checked={draft.ratings[item.key] === option.value}
-                      onChange={() =>
-                        onChange({
-                          ...draft,
-                          ratings: { ...draft.ratings, [item.key]: option.value },
-                        })
-                      }
+                      onChange={() => onChange({ ...draft, ratings: { ...draft.ratings, [item.key]: option.value } })}
                     />
                     <strong>{option.value}</strong>
                     <span>{option.label}</span>
@@ -614,16 +790,11 @@ function WrittenForm({
                 ))}
               </div>
               <label>
-                Optional feedback
+                Optional note
                 <textarea
                   rows={3}
                   value={draft.feedback[item.key] ?? ""}
-                  onChange={(event) =>
-                    onChange({
-                      ...draft,
-                      feedback: { ...draft.feedback, [item.key]: event.target.value },
-                    })
-                  }
+                  onChange={(event) => onChange({ ...draft, feedback: { ...draft.feedback, [item.key]: event.target.value } })}
                 />
               </label>
             </fieldset>
@@ -636,65 +807,34 @@ function WrittenForm({
     <div className="form-page">
       <h3>Advice and submission</h3>
       <label>
-        Strengths &amp; highlights
-        <textarea
-          rows={4}
-          placeholder="What are the strongest elements of this application or venture?"
-          value={draft.strengths}
-          onChange={(event) => onChange({ ...draft, strengths: event.target.value })}
-        />
-        <span className="field-help">Your feedback is provided anonymously to the applicant(s).</span>
+        Strengths and highlights
+        <span className="field-help">Shown to the applicant without your name.</span>
+        <textarea rows={4} value={draft.strengths} onChange={(event) => onChange({ ...draft, strengths: event.target.value })} />
       </label>
       <label>
         Areas for improvement
-        <textarea
-          rows={4}
-          placeholder="What core areas need the most improvement? Identify specific gaps and the key open questions before pitching."
-          value={draft.improvements}
-          onChange={(event) => onChange({ ...draft, improvements: event.target.value })}
-        />
-        <span className="field-help">Your feedback is provided anonymously to the applicant(s).</span>
+        <span className="field-help">Shown to the applicant without your name.</span>
+        <textarea rows={4} value={draft.improvements} onChange={(event) => onChange({ ...draft, improvements: event.target.value })} />
       </label>
       <fieldset className="choice-set">
-        <legend>
-          Should this team advance to presenting this month, where they will have the opportunity to
-          receive a funding award?
-        </legend>
+        <legend>Should this team advance to presenting this month?</legend>
         <label className="radio-line">
-          <input
-            type="radio"
-            name="advance"
-            checked={draft.advance === "yes"}
-            onChange={() => onChange({ ...draft, advance: "yes" })}
-          />
-          Yes, this team/project should advance
+          <input type="radio" name="advance" checked={draft.advance === "yes"} onChange={() => onChange({ ...draft, advance: "yes" })} />
+          Yes, this team should advance
         </label>
         <label className="radio-line">
-          <input
-            type="radio"
-            name="advance"
-            checked={draft.advance === "no"}
-            onChange={() => onChange({ ...draft, advance: "no" })}
-          />
+          <input type="radio" name="advance" checked={draft.advance === "no"} onChange={() => onChange({ ...draft, advance: "no" })} />
           No, this team has more work to do
         </label>
       </fieldset>
       <label>
-        Do you know a good coach or contact for this team?
-        <textarea
-          rows={3}
-          value={draft.coach}
-          onChange={(event) => onChange({ ...draft, coach: event.target.value })}
-        />
+        A coach or contact for this team
+        <textarea rows={3} value={draft.coach} onChange={(event) => onChange({ ...draft, coach: event.target.value })} />
       </label>
       <label>
         Internal notes
-        <span className="field-help">Not shown to applicants.</span>
-        <textarea
-          rows={3}
-          value={draft.internalNotes}
-          onChange={(event) => onChange({ ...draft, internalNotes: event.target.value })}
-        />
+        <span className="field-help">Kept with CFE Fuel staff. Not shown to applicants.</span>
+        <textarea rows={3} value={draft.internalNotes} onChange={(event) => onChange({ ...draft, internalNotes: event.target.value })} />
       </label>
     </div>
   );
@@ -735,73 +875,39 @@ function PitchForm({
         <h3>Feedback</h3>
         <label>
           What did the team do well?
-          <textarea
-            rows={4}
-            value={draft.didWell}
-            onChange={(event) => onChange({ ...draft, didWell: event.target.value })}
-          />
+          <textarea rows={4} value={draft.didWell} onChange={(event) => onChange({ ...draft, didWell: event.target.value })} />
         </label>
         <label>
-          What should this team prioritize to improve their business plan, their pitch, or anything else
-          about their venture?
-          <textarea
-            rows={4}
-            value={draft.prioritize}
-            onChange={(event) => onChange({ ...draft, prioritize: event.target.value })}
-          />
+          What should this team prioritize?
+          <span className="field-help">Business plan, pitch, or anything else about the venture.</span>
+          <textarea rows={4} value={draft.prioritize} onChange={(event) => onChange({ ...draft, prioritize: event.target.value })} />
         </label>
         <label>
-          Do you know someone who would be a good coach or contact for this team?
-          <span className="field-help">
-            If yes, contact information is appreciated and will be passed on to the student team. If you
-            already provided this information during the written application reviews, no need to
-            duplicate.
-          </span>
-          <textarea
-            rows={3}
-            value={draft.coach}
-            onChange={(event) => onChange({ ...draft, coach: event.target.value })}
-          />
+          A coach or contact for this team
+          <span className="field-help">Contact information is passed to the student team. Skip this if you already named someone in the written review.</span>
+          <textarea rows={3} value={draft.coach} onChange={(event) => onChange({ ...draft, coach: event.target.value })} />
         </label>
       </div>
     );
   }
   return (
     <div className="form-page">
-      <h3>CFE Direct Support</h3>
+      <h3>Funding recommendation</h3>
       <fieldset className="choice-set">
         <legend>Should this team receive Fuel funding?</legend>
         <label className="radio-line">
-          <input
-            type="radio"
-            name="funding"
-            checked={draft.funding === "yes"}
-            onChange={() => onChange({ ...draft, funding: "yes" })}
-            required
-          />
+          <input type="radio" name="funding" checked={draft.funding === "yes"} onChange={() => onChange({ ...draft, funding: "yes" })} />
           Yes
         </label>
         <label className="radio-line">
-          <input
-            type="radio"
-            name="funding"
-            checked={draft.funding === "no"}
-            onChange={() => onChange({ ...draft, funding: "no" })}
-          />
+          <input type="radio" name="funding" checked={draft.funding === "no"} onChange={() => onChange({ ...draft, funding: "no" })} />
           No, not at this time
         </label>
       </fieldset>
       <label>
         Internal notes
-        <span className="field-help">
-          These notes are kept internal to the CFE Fuel staff. You may mention which milestones should
-          be funded, or a minimum or maximum amount of funding, etc.
-        </span>
-        <textarea
-          rows={4}
-          value={draft.internalNotes}
-          onChange={(event) => onChange({ ...draft, internalNotes: event.target.value })}
-        />
+        <span className="field-help">Kept with CFE Fuel staff. You may name milestones to fund, or a minimum or maximum amount.</span>
+        <textarea rows={4} value={draft.internalNotes} onChange={(event) => onChange({ ...draft, internalNotes: event.target.value })} />
       </label>
     </div>
   );

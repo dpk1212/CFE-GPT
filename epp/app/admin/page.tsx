@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdminDesk, type DeskAccount } from "@/components/AdminDesk";
 import { FuelConfigPanel } from "@/components/FuelConfigPanel";
+import { PipelineBoard } from "@/components/PipelineBoard";
 import { openSession, SESSION_COOKIE } from "@/lib/session";
 import { readAccounts } from "@/lib/store";
 
@@ -24,6 +25,8 @@ export default async function AdminPage() {
       <AdminDesk accounts={visible} />
       <hr className="admin-rule" />
       <FuelConfigPanel />
+      <hr className="admin-rule" />
+      <PipelineBoard />
     </article>
   );
 }
