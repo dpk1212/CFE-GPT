@@ -10,6 +10,7 @@ test.beforeEach(() => {
   resetFuelAdminState();
   delete process.env.FUEL_CRM_MODE;
   delete process.env.FUEL_CRM_WRITES;
+  delete process.env.FUEL_CRM_WRITES_DEAL_IDS;
   delete process.env.FUEL_ADMIN_WRITES;
 });
 

@@ -11,6 +11,7 @@ test.beforeEach(() => {
   resetFuelJudgeState();
   delete process.env.FUEL_CRM_MODE;
   delete process.env.FUEL_CRM_WRITES;
+  delete process.env.FUEL_CRM_WRITES_DEAL_IDS;
 });
 
 test("stage 1 shows the written-review queue and stage 2 shows invited teams", () => {
@@ -124,6 +125,30 @@ test("hiding a column and a status changes the dashboard the judge sees", async 
     ["Harbor Lamp", "Paper Kite"],
   );
   assert.equal(dashboard.stage.columns.includes("video"), false);
+});
+
+test("an allowlist writes only the named deal", async () => {
+  process.env.FUEL_CRM_MODE = "live";
+  process.env.FUEL_CRM_WRITES_DEAL_IDS = "sample-harbor";
+  let writes = 0;
+  const created = await submitFuelReview(
+    writtenInput(),
+    reviewer(),
+    {
+      async listApplications() {
+        return SAMPLE_APPLICATIONS;
+      },
+      async createReview() {
+        writes += 1;
+        return { id: "review-1" };
+      },
+    },
+    { durable: false },
+  );
+  assert.equal(writes, 1);
+  assert.equal(created.wrote, true);
+  assert.equal(fuelWritesEnabled("sample-glass"), false);
+  assert.equal(fuelWritesEnabled(), false);
 });
 
 test("a live writer is not called when CRM writes are off", async () => {

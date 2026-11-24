@@ -36,8 +36,19 @@ export function fuelCrmMode() {
   return process.env.FUEL_CRM_MODE === "live" ? "live" : "mock";
 }
 
-export function fuelWritesEnabled() {
-  return fuelCrmMode() === "live" && process.env.FUEL_CRM_WRITES === "1";
+export function fuelWriteAllowlist() {
+  return (process.env.FUEL_CRM_WRITES_DEAL_IDS || "")
+    .split(/[,\s]+/)
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
+/** Writes stay off unless live mode is on. An allowlist permits only those deal ids. */
+export function fuelWritesEnabled(dealId?: string) {
+  if (fuelCrmMode() !== "live") return false;
+  const allow = fuelWriteAllowlist();
+  if (allow.length) return Boolean(dealId && allow.includes(dealId));
+  return process.env.FUEL_CRM_WRITES === "1";
 }
 
 export async function fuelDashboard(client: FuelCrmClient = defaultClient(), options?: { durable?: boolean }) {
@@ -96,7 +107,7 @@ export async function submitFuelReview(
   }
   const record = buildCrmRecord(input, application, reviewer);
   const request = crmWriteRequest("POST", "/crm/v8/Application_Review", record);
-  if (!fuelWritesEnabled()) {
+  if (!fuelWritesEnabled(application.id)) {
     const id =
       options?.durable === false ? rememberSubmission(record) : await persistSubmission(record);
     return { id, wrote: false as const, record, request };
@@ -196,7 +207,8 @@ async function stageOneFeedback(token: string, domain: string, ids: string[]) {
 }
 
 async function createInConfiguredSource(record: Record<string, unknown>) {
-  if (!fuelWritesEnabled()) {
+  const dealId = lookupId(record.Application1);
+  if (!fuelWritesEnabled(dealId)) {
     throw new FuelJudgeError("Fuel CRM writes are off.", 403);
   }
   const token = await fuelAccessToken();
