@@ -2478,3 +2478,166 @@ p { margin: 0; }
   .judge-hero { padding: 16px; }
   .judge-pullquote { font-size: 15px; }
 }
+
+/* Premium judge feedback document */
+.feedback-doc {
+  display: grid;
+  gap: 18px;
+}
+.feedback-doc-cover {
+  padding: 20px 20px 18px;
+  border-radius: 12px;
+  background:
+    linear-gradient(160deg, rgba(255, 203, 5, 0.14), transparent 42%),
+    linear-gradient(180deg, var(--blue) 0%, #013b71 100%);
+  color: var(--white);
+}
+.feedback-doc-cover .cc-eyebrow {
+  color: var(--maize);
+  margin-bottom: 8px;
+}
+.feedback-doc-cover h3 {
+  margin: 0 0 8px;
+  color: var(--white);
+  letter-spacing: 0.08em;
+}
+.feedback-doc-project {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+.feedback-doc-summary {
+  margin: 0 0 14px;
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 52ch;
+}
+.feedback-doc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.feedback-doc-meta span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.feedback-doc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.feedback-doc-actions .btn {
+  background: var(--maize);
+  color: var(--blue);
+  border-color: var(--maize);
+}
+.feedback-doc-actions .btn-line {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: var(--white);
+}
+.feedback-doc-cover .quiet { color: rgba(255, 255, 255, 0.72); margin-top: 10px; }
+.feedback-doc-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(0, 39, 76, 0.05);
+}
+.feedback-doc-tabs button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.feedback-doc-tabs button.on {
+  background: var(--white);
+  box-shadow: 0 1px 2px rgba(0, 39, 76, 0.08);
+}
+.feedback-doc-round {
+  display: grid;
+  gap: 16px;
+}
+.feedback-doc-question {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 39, 76, 0.08);
+  border-radius: 12px;
+  background: rgba(0, 39, 76, 0.02);
+}
+.feedback-doc-question h4 {
+  margin: 0;
+  color: var(--blue);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+.feedback-score-chips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.feedback-score-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 39, 76, 0.12);
+  background: var(--white);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+.feedback-score-chips strong {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.feedback-comment-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border-left: 3px solid var(--maize);
+  background: var(--white);
+  box-shadow: 0 1px 2px rgba(0, 39, 76, 0.04);
+}
+.feedback-comment-card header {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.feedback-comment-card p {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.feedback-doc.is-compact .feedback-doc-cover {
+  padding: 16px;
+}
+.feedback-doc.is-compact .feedback-doc-project {
+  font-size: 16px;
+}
+.app-review-feedback {
+  min-height: 280px;
+}
+.judge-prior-feedback .feedback-doc {
+  margin-top: 8px;
+}

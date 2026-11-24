@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FeedbackDocView } from "@/components/FeedbackDocView";
 import { money, shown } from "@/components/admin/adminFormat";
 import { stageTone } from "@/components/admin/stageTone";
 import { EDITABLE_FIELDS, readEditable, type EditableDeal } from "@/lib/fuelAdmin/fields";
@@ -16,7 +17,7 @@ import type { FuelDeskReview } from "@/lib/fuelAdmin/reviews";
 import { FUEL_PIPELINES, FUEL_STATUSES, type FuelApplication } from "@/lib/fuelJudge/types";
 
 type ChangeRow = { label: string; old: string; new: string };
-type TabId = "review" | "edit";
+type TabId = "review" | "feedback" | "edit";
 
 export function ApplicationReview({
   application,
@@ -170,10 +171,19 @@ export function ApplicationReview({
           <button type="button" role="tab" aria-selected={tab === "review"} className={tab === "review" ? "on" : undefined} onClick={() => setTab("review")}>
             Review
           </button>
+          <button type="button" role="tab" aria-selected={tab === "feedback"} className={tab === "feedback" ? "on" : undefined} onClick={() => setTab("feedback")}>
+            Feedback
+          </button>
           <button type="button" role="tab" aria-selected={tab === "edit"} className={tab === "edit" ? "on" : undefined} onClick={() => setTab("edit")}>
             Edit details
           </button>
         </div>
+
+        {tab === "feedback" ? (
+          <div className="app-review-feedback">
+            <FeedbackDocView applicationId={application.id} />
+          </div>
+        ) : null}
 
         {tab === "review" ? (
           <div className="app-review-grid">
@@ -255,7 +265,9 @@ export function ApplicationReview({
               ))}
             </section>
           </div>
-        ) : (
+        ) : null}
+
+        {tab === "edit" ? (
           <form
             className="app-edit-form"
             onSubmit={(event) => {
@@ -286,7 +298,7 @@ export function ApplicationReview({
               </details>
             ) : null}
           </form>
-        )}
+        ) : null}
 
         <dialog ref={dialogRef} className="confirm-dialog">
           <h3>Confirm this change</h3>

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FeedbackDocView } from "@/components/FeedbackDocView";
 import {
   COLUMN_LABELS,
   CONFIDENTIALITY_PARAGRAPH,
@@ -578,12 +579,8 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
 
               {columns.has("initialFeedback") ? (
                 <div className="read-feedback judge-prior-feedback">
-                  <h3>Initial judge feedback</h3>
-                  {selected.initialFeedback.length ? (
-                    selected.initialFeedback.map((note) => <p key={note}>{note}</p>)
-                  ) : (
-                    <p>No stage 1 feedback is on this application yet.</p>
-                  )}
+                  <h3>Judge feedback document</h3>
+                  <FeedbackDocView applicationId={selected.id} compact />
                 </div>
               ) : null}
 
