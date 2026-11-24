@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { FeedbackDocView } from "@/components/FeedbackDocView";
+import { RATING_SCALE } from "@/lib/fuelJudge/columns";
 
 const STORAGE_KEY = "epp-initial-judges-feedback-open";
 
-export function InitialJudgesFeedbackPanel({ applicationId }: { applicationId: string }) {
+export function InitialJudgesFeedbackPanel({
+  applicationId,
+  workbench = false,
+}: {
+  applicationId: string;
+  workbench?: boolean;
+}) {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
@@ -23,7 +30,10 @@ export function InitialJudgesFeedbackPanel({ applicationId }: { applicationId: s
   }
 
   return (
-    <section className={`initial-judges-feedback${open ? " is-open" : ""}`} aria-label="Initial judges' feedback">
+    <section
+      className={`initial-judges-feedback${open ? " is-open" : ""}${workbench ? " is-workbench" : ""}`}
+      aria-label="Initial judges' feedback"
+    >
       <button
         type="button"
         className="initial-judges-feedback-toggle"
@@ -35,7 +45,16 @@ export function InitialJudgesFeedbackPanel({ applicationId }: { applicationId: s
       </button>
       {open ? (
         <div className="initial-judges-feedback-body">
-          <FeedbackDocView applicationId={applicationId} compact />
+          {workbench ? (
+            <ul className="scale-legend scale-legend-inline feedback-scale-legend" aria-label="Rubric score scale">
+              {RATING_SCALE.map((option) => (
+                <li key={option.value}>
+                  <strong>{option.value}</strong> {option.label}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <FeedbackDocView applicationId={applicationId} compact workbench={workbench} />
         </div>
       ) : null}
     </section>

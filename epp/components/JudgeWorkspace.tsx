@@ -69,6 +69,7 @@ const LINK_COLUMNS = new Set<FuelColumnId>([
   "additional",
 ]);
 
+const QUEUE_STORAGE_KEY = "epp-judge-queue-open";
 const emptyRatings = { problem: 0, solution: 0, market: 0, freedom: 0, execution: 0 };
 
 function blankWritten(): WrittenDraft {
@@ -119,6 +120,14 @@ function readReviewed(email: string, stageId: string) {
   }
 }
 
+function hasStoredDraft(email: string, stageId: string, applicationId: string) {
+  try {
+    return Boolean(localStorage.getItem(draftKey(email, stageId, applicationId)));
+  } catch {
+    return false;
+  }
+}
+
 function linkFor(application: FuelApplication, column: FuelColumnId) {
   const map: Partial<Record<FuelColumnId, string | null>> = {
     fuelApplication: application.fuelApplicationUrl,
@@ -161,6 +170,14 @@ function pitchBlank(draft: PitchDraft) {
   );
 }
 
+function industryChips(value: string | null | undefined) {
+  if (!value?.trim()) return [];
+  return value
+    .split(/[,;/|]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
 export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Props) {
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -178,7 +195,10 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
   const [reviewed, setReviewed] = useState<Set<string>>(new Set());
   const [hydratedFor, setHydratedFor] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState("");
+  const [queueOpen, setQueueOpen] = useState(false);
+  const [draftTick, setDraftTick] = useState(0);
   const loadedSnapshot = useRef("");
+  const queueRef = useRef<HTMLDivElement | null>(null);
 
   function load() {
     setLoading(true);
@@ -223,6 +243,14 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
     };
   }, [judgeEmail]);
 
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(QUEUE_STORAGE_KEY) === "1") setQueueOpen(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const rows = useMemo(() => {
     const applications = dashboard?.applications ?? [];
     const needle = query.trim().toLowerCase();
@@ -254,6 +282,11 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
   const selectedIndex = rows.findIndex((row) => row.id === selectedId);
   const reviewedCount = dashboard?.applications.filter((row) => reviewed.has(row.id)).length ?? 0;
   const openCount = (dashboard?.applications.length ?? 0) - reviewedCount;
+  const formId: FuelFormId | null = dashboard?.stage.form ?? null;
+  const dirty =
+    Boolean(dashboard && selectedId && formId) &&
+    !(selectedId && reviewed.has(selectedId)) &&
+    (formId === "written" ? !writtenBlank(written) : !pitchBlank(pitch));
 
   useEffect(() => {
     if (!dashboard || !selectedId) return;
@@ -297,15 +330,27 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
       if (blank) {
         localStorage.removeItem(key);
         loadedSnapshot.current = serialized;
+        setDraftTick((value) => value + 1);
         return;
       }
       if (serialized === loadedSnapshot.current) return;
       localStorage.setItem(key, serialized);
       loadedSnapshot.current = serialized;
       setDraftNote("Draft saved on this browser.");
+      setDraftTick((value) => value + 1);
     }, 450);
     return () => window.clearTimeout(handle);
   }, [dashboard, hydratedFor, judgeEmail, pitch, selectedId, written]);
+
+  useEffect(() => {
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      if (!dirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -317,22 +362,73 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
       if (!forward && !backward) return;
       event.preventDefault();
       const current = Math.max(0, rows.findIndex((row) => row.id === selectedId));
-      const next = forward ? Math.min(rows.length - 1, current + 1) : Math.max(0, current - 1);
-      setSelectedId(rows[next]?.id ?? null);
+      const nextId = rows[forward ? Math.min(rows.length - 1, current + 1) : Math.max(0, current - 1)]?.id ?? null;
+      if (!nextId || nextId === selectedId) return;
+      if (dirty && !window.confirm("You have unsaved review input on this application. Leave anyway?")) return;
+      setSelectedId(nextId);
+      setQueueOpen(false);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [rows, selectedId]);
+  }, [dirty, rows, selectedId]);
+
+  useEffect(() => {
+    if (!queueOpen) return;
+    function onPointer(event: MouseEvent) {
+      if (!queueRef.current?.contains(event.target as Node)) setQueueOpen(false);
+    }
+    function onEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setQueueOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [queueOpen]);
 
   function toggleSort(key: SortKey) {
     setSort((current) => (current.key === key ? { key, dir: current.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+  }
+
+  function toggleQueue() {
+    setQueueOpen((value) => {
+      const next = !value;
+      try {
+        sessionStorage.setItem(QUEUE_STORAGE_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
+
+  function confirmLeave() {
+    if (!dirty) return true;
+    return window.confirm("You have unsaved review input on this application. Leave anyway?");
+  }
+
+  function selectApplication(id: string | null) {
+    if (!id || id === selectedId) return;
+    if (!confirmLeave()) return;
+    setSelectedId(id);
+    setQueueOpen(false);
   }
 
   function move(offset: number) {
     if (!rows.length) return;
     const current = Math.max(0, rows.findIndex((row) => row.id === selectedId));
     const next = Math.min(rows.length - 1, Math.max(0, current + offset));
-    setSelectedId(rows[next]?.id ?? null);
+    selectApplication(rows[next]?.id ?? null);
+  }
+
+  function appStatus(applicationId: string): "submitted" | "draft" | "open" {
+    if (reviewed.has(applicationId)) return "submitted";
+    if (!dashboard) return "open";
+    if (applicationId === selectedId && dirty) return "draft";
+    if (hasStoredDraft(judgeEmail, dashboard.stage.id, applicationId)) return "draft";
+    return "open";
   }
 
   async function submitReview(event: FormEvent) {
@@ -394,6 +490,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
     setPitch(blankPitch());
     setFormStep(1);
     setDraftNote("");
+    setDraftTick((value) => value + 1);
     setPayloadPreview(body?.wrote ? null : adminView ? (body?.request ?? null) : (body?.record ?? null));
     setMessage(
       body?.wrote
@@ -407,7 +504,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
 
   if (loading) {
     return (
-      <div className="desk-page judge-desk" aria-busy="true">
+      <div className="desk-page judge-desk judge-workbench-desk" aria-busy="true">
         <div className="cc-skeleton">
           <div className="cc-card is-skeleton tall" />
         </div>
@@ -415,16 +512,15 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
     );
   }
 
-  if (loadError || !dashboard) {
+  if (loadError || !dashboard || !formId) {
     return (
-      <div className="desk-page judge-desk">
+      <div className="desk-page judge-desk judge-workbench-desk">
         <p className="form-note" role="alert">{loadError || "The Fuel desk could not be loaded."}</p>
         <button className="btn" type="button" onClick={() => void load()}>Try again</button>
       </div>
     );
   }
 
-  const formId: FuelFormId = dashboard.stage.form;
   const columns = new Set(dashboard.stage.columns);
   const materials = dashboard.stage.columns
     .filter((column) => LINK_COLUMNS.has(column))
@@ -432,14 +528,17 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
   const progress = dashboard.applications.length
     ? Math.round((reviewedCount / dashboard.applications.length) * 100)
     : 0;
+  const status = selected ? appStatus(selected.id) : "open";
+  const industries = selected ? industryChips(selected.industries) : [];
+  void draftTick;
 
   return (
-    <div className="desk-page judge-desk">
-      <header className="judge-hero">
-        <div className="judge-hero-copy">
+    <div className="desk-page judge-desk judge-workbench-desk">
+      <header className="judge-hero-slim">
+        <div className="judge-hero-slim-copy">
           <p className="cc-eyebrow">Fuel · Judge desk</p>
           <h1>{dashboard.stage.name}</h1>
-          <p className="judge-hero-note">
+          <p className="judge-hero-slim-note">
             Signed in as {judgeName}.
             {dashboard.mode === "mock"
               ? " Sample applications. Nothing on this desk is written to Zoho."
@@ -448,212 +547,281 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
                 : " Applications are read from Fuel CRM. Submitted reviews stay on this desk until CRM writes are on."}
           </p>
         </div>
-        <div className="judge-progress" aria-label="Your review progress">
-          <div className="judge-progress-meta">
-            <strong>{reviewedCount}</strong>
-            <span>of {dashboard.applications.length} reviewed</span>
-            <em>{openCount} open</em>
-          </div>
-          <div className="judge-progress-track" aria-hidden="true">
-            <span style={{ width: `${progress}%` }} />
-          </div>
-          <p className="judge-progress-hint">{dashboard.stage.statuses.join(" · ")}</p>
-        </div>
-      </header>
-      {dashboard.syncing ? <p className="desk-note">CRM syncing</p> : null}
 
-      <div className="desk-workspace judge-workspace">
-        <section className="desk-queue judge-queue" aria-label="Applications for review">
-          <div className="desk-queue-bar">
-            <h2>Applications</h2>
-            <label className="desk-search">
-              <span className="sr-only">Search applications</span>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search name, summary, or industry"
-                type="search"
-              />
-            </label>
+        <div className="judge-hero-slim-tools">
+          <div className="judge-progress-slim" aria-label="Your review progress">
+            <div className="judge-progress-slim-meta">
+              <strong>{reviewedCount}</strong>
+              <span>of {dashboard.applications.length} reviewed</span>
+              <em>{openCount} open</em>
+            </div>
+            <div className="judge-progress-slim-track" aria-hidden="true">
+              <span style={{ width: `${progress}%` }} />
+            </div>
           </div>
-          <div className="desk-sort judge-sort">
-            <span>Sort</span>
-            <SortButton label="Project" sortKey="projectName" sort={sort} onSort={toggleSort} />
-            <SortButton label="Status" sortKey="stage" sort={sort} onSort={toggleSort} />
-            {columns.has("fundingRequested") ? <SortButton label="Funding" sortKey="fundingRequested" sort={sort} onSort={toggleSort} /> : null}
-            {columns.has("totalReviews") ? <SortButton label="Reviews" sortKey="totalReviews" sort={sort} onSort={toggleSort} /> : null}
-          </div>
-          {dashboard.applications.length === 0 ? (
-            <p className="desk-empty">No applications are in {dashboard.stage.statuses.join(" or ")}.</p>
-          ) : rows.length === 0 ? (
-            <p className="desk-empty">No applications match that search.</p>
-          ) : (
-            <ul className="judge-card-list">
-              {rows.map((application) => {
-                const mine = reviewed.has(application.id);
-                const active = application.id === selectedId;
-                return (
-                  <li key={application.id}>
-                    <button
-                      type="button"
-                      className={`judge-app-card${active ? " is-selected" : ""}${mine ? " is-reviewed" : ""}`}
-                      aria-current={active ? "true" : undefined}
-                      onClick={() => setSelectedId(application.id)}
-                    >
-                      <span className={`review-status${mine ? " is-done" : ""}`} aria-label={mine ? "Reviewed by you" : "Still open"}>
-                        {mine ? "Reviewed" : "Open"}
-                      </span>
-                      <strong>{application.projectName}</strong>
-                      {columns.has("summary") && application.summary ? (
-                        <span className="judge-card-summary">{application.summary}</span>
-                      ) : null}
-                      <span className="judge-card-meta">
-                        <span className={`stage-chip tone-active`}>{application.stage}</span>
-                        {columns.has("fundingRequested") ? <em>{money(application.fundingRequested)}</em> : null}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <p className="desk-keys">J / K or ← / → move through the queue when you are not typing.</p>
-        </section>
 
-        <section className="desk-read judge-read" aria-label="Application and review">
-          {!selected ? (
-            <p className="desk-empty">Select an application to read it and start a review.</p>
-          ) : (
-            <>
-              <div className="read-head judge-read-head">
-                <div>
-                  <p className="cc-eyebrow">
-                    Application {selectedIndex >= 0 ? selectedIndex + 1 : "—"} of {rows.length}
-                    {reviewed.has(selected.id) ? " · Reviewed by you" : ""}
-                  </p>
-                  <h2 className="judge-title">{selected.projectName}</h2>
-                  <span className="stage-chip tone-active">{selected.stage}</span>
+          <div className="judge-queue-shell" ref={queueRef}>
+            <button
+              type="button"
+              className={`judge-queue-toggle${queueOpen ? " is-open" : ""}`}
+              aria-expanded={queueOpen}
+              aria-controls="judge-app-queue"
+              onClick={toggleQueue}
+            >
+              Applications
+              <span aria-hidden="true">{queueOpen ? "▴" : "▾"}</span>
+            </button>
+            {queueOpen ? (
+              <div id="judge-app-queue" className="judge-queue-drawer" role="dialog" aria-label="Applications for review">
+                <div className="judge-queue-drawer-bar">
+                  <label className="desk-search">
+                    <span className="sr-only">Search applications</span>
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search name, summary, or industry"
+                      type="search"
+                    />
+                  </label>
+                  <div className="desk-sort judge-sort">
+                    <span>Sort</span>
+                    <SortButton label="Project" sortKey="projectName" sort={sort} onSort={toggleSort} />
+                    <SortButton label="Status" sortKey="stage" sort={sort} onSort={toggleSort} />
+                    {columns.has("fundingRequested") ? (
+                      <SortButton label="Funding" sortKey="fundingRequested" sort={sort} onSort={toggleSort} />
+                    ) : null}
+                    {columns.has("totalReviews") ? (
+                      <SortButton label="Reviews" sortKey="totalReviews" sort={sort} onSort={toggleSort} />
+                    ) : null}
+                  </div>
                 </div>
-                <div className="read-move">
-                  <button className="btn-line" type="button" onClick={() => move(-1)} disabled={selectedIndex <= 0}>Previous</button>
-                  <button className="btn-line" type="button" onClick={() => move(1)} disabled={selectedIndex < 0 || selectedIndex >= rows.length - 1}>Next</button>
-                </div>
-              </div>
-
-              <blockquote className="judge-pullquote">
-                {selected.summary || "No one-sentence summary is on this application."}
-              </blockquote>
-
-              <dl className="read-facts judge-facts">
-                {columns.has("fundingRequested") ? (
-                  <div><dt>Funding</dt><dd>{money(selected.fundingRequested)}</dd></div>
-                ) : null}
-                {columns.has("industries") ? (
-                  <div><dt>Industries</dt><dd>{selected.industries || "—"}</dd></div>
-                ) : null}
-                <div>
-                  <dt>Pipeline</dt>
-                  <dd>
-                    <span className={pipelineChipClass(selected.pipeline)}>{pipelineLabel(selected.pipeline)}</span>
-                  </dd>
-                </div>
-                {columns.has("totalReviews") ? (
-                  <div><dt>Reviews</dt><dd>{selected.totalReviews ?? "—"}</dd></div>
-                ) : null}
-              </dl>
-
-              {materials.length ? (
-                <section className="judge-docs">
-                  <h3>Documents</h3>
-                  <ul className="doc-checklist">
-                    {materials.map(({ column, link }) => (
-                      <li key={column} className={link ? "is-present" : "is-missing"}>
-                        <span>{COLUMN_LABELS[column]}</span>
-                        {link ? (
-                          <a href={link.href} target="_blank" rel="noreferrer">
-                            Open
-                            <span className="sr-only"> (opens in a new tab)</span>
-                          </a>
-                        ) : (
-                          <em>Not provided</em>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
-
-              {columns.has("initialFeedback") ? (
-                <InitialJudgesFeedbackPanel applicationId={selected.id} />
-              ) : null}
-
-              <form className="judge-form judge-form-elite" onSubmit={submitReview}>
-                <div className="judge-form-head">
-                  <p className="cc-eyebrow">Step {formStep} of {FORM_STEPS[formId].length}</p>
-                  <ol className="form-steps" aria-label="Review steps">
-                    {FORM_STEPS[formId].map((label, index) => {
-                      const step = index + 1;
+                {dashboard.applications.length === 0 ? (
+                  <p className="desk-empty">No applications are in {dashboard.stage.statuses.join(" or ")}.</p>
+                ) : rows.length === 0 ? (
+                  <p className="desk-empty">No applications match that search.</p>
+                ) : (
+                  <ul className="judge-queue-list">
+                    {rows.map((application) => {
+                      const mine = appStatus(application.id);
+                      const active = application.id === selectedId;
                       return (
-                        <li key={label} className={formStep === step ? "on" : formStep > step ? "done" : undefined}>
-                          <button type="button" onClick={() => setFormStep(step)}>
-                            <em>{step}</em>
-                            <span>{label}</span>
+                        <li key={application.id}>
+                          <button
+                            type="button"
+                            className={`judge-queue-item${active ? " is-selected" : ""}`}
+                            aria-current={active ? "true" : undefined}
+                            onClick={() => selectApplication(application.id)}
+                          >
+                            <strong>{application.projectName}</strong>
+                            <span className={`review-status status-${mine}`}>
+                              {mine === "submitted" ? "Submitted" : mine === "draft" ? "Draft" : "Open"}
+                            </span>
                           </button>
                         </li>
                       );
                     })}
-                  </ol>
-                  {draftNote ? <p className="draft-note" role="status">{draftNote}</p> : null}
-                </div>
-                {formId === "written" ? (
-                  <WrittenForm step={formStep} draft={written} judgeName={judgeName} judgeEmail={judgeEmail} projectName={selected.projectName} onChange={setWritten} />
-                ) : (
-                  <PitchForm step={formStep} draft={pitch} judgeName={judgeName} judgeEmail={judgeEmail} projectName={selected.projectName} onChange={setPitch} />
+                  </ul>
                 )}
-                <div className="judge-form-actions">
-                  {formStep > 1 ? (
-                    <button className="btn-line" type="button" onClick={() => setFormStep((step) => step - 1)}>Back</button>
-                  ) : <span />}
-                  {formStep < 3 ? (
-                    <button
-                      className="btn"
-                      type="button"
-                      onClick={() => {
-                        if (formStep === 1 && !(formId === "written" ? written.confidentiality : pitch.confidentiality)) {
-                          setError("The confidentiality agreement is required.");
-                          return;
-                        }
-                        if (formStep === 1 && formId === "written" && !written.conflict) {
-                          setError("Choose whether you have a conflict of interest.");
-                          return;
-                        }
-                        if (formStep === 2 && formId === "written" && Object.values(written.ratings).some((value) => !value)) {
-                          setError("Each category needs a rating from 1 to 5.");
-                          return;
-                        }
-                        setError("");
-                        setFormStep((step) => step + 1);
-                      }}
-                    >
-                      Continue
-                    </button>
-                  ) : (
-                    <button className="btn" type="submit" disabled={busy}>{busy ? "Submitting…" : formId === "pitch" ? "Submit recommendation" : "Submit review"}</button>
-                  )}
+                <p className="desk-keys">J / K or ← / → move through the queue when you are not typing.</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      {dashboard.syncing ? <p className="desk-note">CRM syncing</p> : null}
+
+      {!selected ? (
+        <p className="desk-empty judge-workbench-empty">Select an application to read it and start a review.</p>
+      ) : (
+        <div className="judge-workbench">
+          <section className="judge-materials" aria-label="Application materials">
+            <div className="judge-materials-head">
+              <div>
+                <p className="cc-eyebrow">
+                  Application {selectedIndex >= 0 ? selectedIndex + 1 : "—"} of {rows.length}
+                </p>
+                <div className="judge-title-row">
+                  <h2 className="judge-title">{selected.projectName}</h2>
+                  <span className={`review-status status-${status}`}>
+                    {status === "submitted" ? "Submitted" : status === "draft" ? "Draft" : "Open"}
+                  </span>
                 </div>
-                {error ? <p className="form-note" role="alert">{error}</p> : null}
-                {message ? <p className="form-note" role="status">{message}</p> : null}
-                {payloadPreview ? (
-                  <details className="payload-preview" open={adminView}>
-                    <summary>{adminView ? "Payload preview" : "Dry-run payload"}</summary>
-                    <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
-                  </details>
-                ) : null}
-              </form>
-            </>
-          )}
-        </section>
-      </div>
+                <div className="judge-title-meta">
+                  <span className="stage-chip tone-active">{selected.stage}</span>
+                  <span className={pipelineChipClass(selected.pipeline)}>{pipelineLabel(selected.pipeline)}</span>
+                </div>
+              </div>
+              <div className="read-move">
+                <button className="btn-line" type="button" onClick={() => move(-1)} disabled={selectedIndex <= 0}>
+                  Previous
+                </button>
+                <button
+                  className="btn-line"
+                  type="button"
+                  onClick={() => move(1)}
+                  disabled={selectedIndex < 0 || selectedIndex >= rows.length - 1}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+
+            <p className="judge-summary-line">
+              {selected.summary || "No one-sentence summary is on this application."}
+            </p>
+
+            <div className="judge-fact-strip" aria-label="Key facts">
+              {columns.has("fundingRequested") ? (
+                <div>
+                  <span>Funding</span>
+                  <strong>{money(selected.fundingRequested)}</strong>
+                </div>
+              ) : null}
+              <div>
+                <span>Pipeline</span>
+                <strong>
+                  <span className={pipelineChipClass(selected.pipeline)}>{pipelineLabel(selected.pipeline)}</span>
+                </strong>
+              </div>
+              {columns.has("industries") ? (
+                <div className="judge-fact-industries">
+                  <span>Industries</span>
+                  <strong>
+                    {industries.length ? (
+                      <ul className="industry-chip-list">
+                        {industries.slice(0, 4).map((chip) => (
+                          <li key={chip} title={chip}>{chip}</li>
+                        ))}
+                        {industries.length > 4 ? <li className="is-more">+{industries.length - 4}</li> : null}
+                      </ul>
+                    ) : (
+                      "—"
+                    )}
+                  </strong>
+                </div>
+              ) : null}
+              {columns.has("totalReviews") ? (
+                <div>
+                  <span>Reviews</span>
+                  <strong>{selected.totalReviews ?? "—"}</strong>
+                </div>
+              ) : null}
+            </div>
+
+            {materials.length ? (
+              <section className="judge-docs judge-docs-workbench">
+                <h3>Application materials</h3>
+                <ul className="doc-action-list">
+                  {materials.map(({ column, link }) => (
+                    <li key={column} className={link ? "is-present" : "is-missing"}>
+                      <span>{COLUMN_LABELS[column]}</span>
+                      {link ? (
+                        <a className="doc-open-btn" href={link.href} target="_blank" rel="noreferrer">
+                          Open
+                          <span className="sr-only"> (opens in a new tab)</span>
+                        </a>
+                      ) : (
+                        <em>Not provided</em>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {columns.has("initialFeedback") ? (
+              <InitialJudgesFeedbackPanel applicationId={selected.id} workbench />
+            ) : null}
+          </section>
+
+          <aside className="judge-score-pane" aria-label="Score and submit feedback">
+            <form className="judge-form judge-form-elite judge-form-sticky" onSubmit={submitReview}>
+              <div className="judge-form-head">
+                <p className="cc-eyebrow">Your review · Step {formStep} of {FORM_STEPS[formId].length}</p>
+                <ol className="form-steps" aria-label="Review steps">
+                  {FORM_STEPS[formId].map((label, index) => {
+                    const step = index + 1;
+                    return (
+                      <li key={label} className={formStep === step ? "on" : formStep > step ? "done" : undefined}>
+                        <button type="button" onClick={() => setFormStep(step)}>
+                          <em>{step}</em>
+                          <span>{label}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+                {draftNote ? <p className="draft-note" role="status">{draftNote}</p> : null}
+              </div>
+              {formId === "written" ? (
+                <WrittenForm
+                  step={formStep}
+                  draft={written}
+                  judgeName={judgeName}
+                  judgeEmail={judgeEmail}
+                  projectName={selected.projectName}
+                  onChange={setWritten}
+                />
+              ) : (
+                <PitchForm
+                  step={formStep}
+                  draft={pitch}
+                  judgeName={judgeName}
+                  judgeEmail={judgeEmail}
+                  projectName={selected.projectName}
+                  onChange={setPitch}
+                />
+              )}
+              <div className="judge-form-actions">
+                {formStep > 1 ? (
+                  <button className="btn-line" type="button" onClick={() => setFormStep((step) => step - 1)}>
+                    Back
+                  </button>
+                ) : (
+                  <span />
+                )}
+                {formStep < 3 ? (
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => {
+                      if (formStep === 1 && !(formId === "written" ? written.confidentiality : pitch.confidentiality)) {
+                        setError("The confidentiality agreement is required.");
+                        return;
+                      }
+                      if (formStep === 1 && formId === "written" && !written.conflict) {
+                        setError("Choose whether you have a conflict of interest.");
+                        return;
+                      }
+                      if (formStep === 2 && formId === "written" && Object.values(written.ratings).some((value) => !value)) {
+                        setError("Each category needs a rating from 1 to 5.");
+                        return;
+                      }
+                      setError("");
+                      setFormStep((step) => step + 1);
+                    }}
+                  >
+                    Continue
+                  </button>
+                ) : (
+                  <button className="btn" type="submit" disabled={busy}>
+                    {busy ? "Submitting…" : formId === "pitch" ? "Submit recommendation" : "Submit review"}
+                  </button>
+                )}
+              </div>
+              {error ? <p className="form-note" role="alert">{error}</p> : null}
+              {message ? <p className="form-note" role="status">{message}</p> : null}
+              {payloadPreview ? (
+                <details className="payload-preview" open={adminView}>
+                  <summary>{adminView ? "Payload preview" : "Dry-run payload"}</summary>
+                  <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
+                </details>
+              ) : null}
+            </form>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
@@ -772,10 +940,15 @@ function WrittenForm({
   if (step === 2) {
     return (
       <div className="form-page">
-        <h3>Ratings</h3>
-        <ul className="scale-legend">
+        <h3>Ratings and feedback</h3>
+        <p className="field-help">
+          Score each rubric question 1–5. Labels match the initial judges&apos; feedback on the left so you can cross-reference while scoring.
+        </p>
+        <ul className="scale-legend scale-legend-inline">
           {RATING_SCALE.map((option) => (
-            <li key={option.value}><strong>{option.value}</strong> {option.label}</li>
+            <li key={option.value}>
+              <strong>{option.value}</strong> {option.label}
+            </li>
           ))}
         </ul>
         <div className="rubric-list">
@@ -882,6 +1055,9 @@ function PitchForm({
     return (
       <div className="form-page">
         <h3>Feedback</h3>
+        <p className="field-help">
+          Use the anonymized initial judges&apos; feedback on the left (same rubric question order) while writing your pitch notes.
+        </p>
         <label>
           What did the team do well?
           <textarea rows={4} value={draft.didWell} onChange={(event) => onChange({ ...draft, didWell: event.target.value })} />
