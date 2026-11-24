@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { FeedbackDocView } from "@/components/FeedbackDocView";
+import { InitialJudgesFeedbackPanel } from "@/components/InitialJudgesFeedbackPanel";
 import {
   COLUMN_LABELS,
   CONFIDENTIALITY_PARAGRAPH,
@@ -9,6 +9,7 @@ import {
   RATING_SCALE,
   WRITTEN_RUBRIC,
 } from "@/lib/fuelJudge/columns";
+import { pipelineChipClass, pipelineLabel } from "@/lib/fuelAdmin/metrics";
 import type {
   FuelApplication,
   FuelColumnId,
@@ -550,7 +551,12 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
                 {columns.has("industries") ? (
                   <div><dt>Industries</dt><dd>{selected.industries || "—"}</dd></div>
                 ) : null}
-                <div><dt>Pipeline</dt><dd>{selected.pipeline}</dd></div>
+                <div>
+                  <dt>Pipeline</dt>
+                  <dd>
+                    <span className={pipelineChipClass(selected.pipeline)}>{pipelineLabel(selected.pipeline)}</span>
+                  </dd>
+                </div>
                 {columns.has("totalReviews") ? (
                   <div><dt>Reviews</dt><dd>{selected.totalReviews ?? "—"}</dd></div>
                 ) : null}
@@ -569,7 +575,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
                             <span className="sr-only"> (opens in a new tab)</span>
                           </a>
                         ) : (
-                          <em>Missing</em>
+                          <em>Not provided</em>
                         )}
                       </li>
                     ))}
@@ -578,10 +584,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
               ) : null}
 
               {columns.has("initialFeedback") ? (
-                <div className="read-feedback judge-prior-feedback">
-                  <h3>Judge feedback document</h3>
-                  <FeedbackDocView applicationId={selected.id} compact />
-                </div>
+                <InitialJudgesFeedbackPanel applicationId={selected.id} />
               ) : null}
 
               <form className="judge-form judge-form-elite" onSubmit={submitReview}>

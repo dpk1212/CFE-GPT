@@ -136,6 +136,18 @@ export function pipelineLabel(pipeline: string) {
   return pipeline;
 }
 
+/** CSS tone suffix for pipeline chips: Fuel / Jumpstart / Consumer IT. */
+export function pipelineTone(pipeline: string) {
+  if (pipeline === "Fuel Jumpstart") return "jumpstart";
+  if (pipeline === "Fuel Consumer IT") return "consumer-it";
+  if (pipeline === "Fuel") return "fuel";
+  return "other";
+}
+
+export function pipelineChipClass(pipeline: string) {
+  return `pipeline-chip pipeline-${pipelineTone(pipeline)}`;
+}
+
 export function funnel(applications: FuelApplication[]) {
   return FUEL_STATUSES.map((stage) => ({
     stage,
