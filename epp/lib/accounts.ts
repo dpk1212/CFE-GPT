@@ -9,6 +9,10 @@ export type Account = {
   status: Status;
   createdAt: string;
   reviewedAt: string | null;
+  /** The person knows this password. A random hash for Google sign-in does not count. */
+  passwordChosen?: boolean;
+  /** An admin set this password. The judge must replace it before opening the desk. */
+  mustChangePassword?: boolean;
 };
 
 export const BOOTSTRAP_ADMIN_EMAIL = "kolnitd@umich.edu";
@@ -35,7 +39,11 @@ export function bootstrapAdmin(accounts: Account[], passwordHash: string, now: s
   ];
 }
 
-export function requestJudge(accounts: Account[], input: { name: string; email: string; passwordHash: string }, now: string) {
+export function requestJudge(
+  accounts: Account[],
+  input: { name: string; email: string; passwordHash: string; passwordChosen?: boolean },
+  now: string,
+) {
   const name = input.name.trim().replace(/\s+/g, " ");
   const email = normalizeEmail(input.email);
   if (name.length < 2 || !email.includes("@") || email.startsWith("@") || email.endsWith("@")) {
@@ -52,6 +60,8 @@ export function requestJudge(accounts: Account[], input: { name: string; email: 
     status: "pending",
     createdAt: now,
     reviewedAt: null,
+    passwordChosen: input.passwordChosen !== false,
+    mustChangePassword: false,
   };
   return { accounts: [...accounts.filter((account) => account.email !== email), next] };
 }
@@ -87,7 +97,7 @@ function judgeDisplayName(email: string, name: string | undefined, existing?: Ac
 /** An admin adds a judge who is approved immediately. No request email is sent. */
 export function addApprovedJudge(
   accounts: Account[],
-  input: { name?: string; email: string; passwordHash: string },
+  input: { name?: string; email: string; passwordHash: string; setPassword?: boolean },
   now: string,
 ) {
   const email = normalizeEmail(input.email);
@@ -103,16 +113,66 @@ export function addApprovedJudge(
   const account: Account = {
     name: judgeDisplayName(email, input.name, existing),
     email,
-    passwordHash: existing?.passwordHash || input.passwordHash,
+    passwordHash: input.setPassword ? input.passwordHash : existing?.passwordHash || input.passwordHash,
     role: "judge",
     status: "approved",
     createdAt: existing?.createdAt || now,
     reviewedAt: now,
+    passwordChosen: input.setPassword ? true : Boolean(existing?.passwordChosen),
+    mustChangePassword: input.setPassword ? true : Boolean(existing?.mustChangePassword),
   };
   const next = existing
     ? accounts.map((item) => (item.email === email ? account : item))
     : [...accounts, account];
   return { accounts: next, account };
+}
+
+export function resetJudgePassword(accounts: Account[], email: string, passwordHash: string, now: string) {
+  const target = normalizeEmail(email);
+  const existing = accounts.find((account) => account.email === target);
+  if (!existing || existing.role !== "judge" || existing.status !== "approved") {
+    return { accounts, error: "That judge is not on the list." };
+  }
+  const account: Account = { ...existing, passwordHash, passwordChosen: true, mustChangePassword: true, reviewedAt: existing.reviewedAt ?? now };
+  return {
+    accounts: accounts.map((item) => (item.email === target ? account : item)),
+    account,
+  };
+}
+
+export function setJudgePassword(accounts: Account[], email: string, passwordHash: string) {
+  const target = normalizeEmail(email);
+  const existing = accounts.find((account) => account.email === target);
+  if (!existing || existing.role !== "judge" || existing.status !== "approved") {
+    return { accounts, error: "Sign in as a judge to set a password." };
+  }
+  const account: Account = { ...existing, passwordHash, passwordChosen: true, mustChangePassword: false };
+  return {
+    accounts: accounts.map((item) => (item.email === target ? account : item)),
+    account,
+  };
+}
+
+export function passwordStatus(account: { mustChangePassword?: boolean; passwordChosen?: boolean }) {
+  if (account.mustChangePassword) return "temporary" as const;
+  if (account.passwordChosen) return "chosen" as const;
+  return "google" as const;
+}
+
+export function passwordStatusLabel(account: { mustChangePassword?: boolean; passwordChosen?: boolean }) {
+  const status = passwordStatus(account);
+  if (status === "temporary") return "Temporary password";
+  if (status === "chosen") return "Password set";
+  return "Google only";
+}
+
+export function loginDestination(account: { role: Role; mustChangePassword?: boolean }) {
+  if (account.role === "judge" && account.mustChangePassword) return "/login/password/update";
+  return account.role === "admin" ? "/admin" : "/judge";
+}
+
+export function passwordAuditChange(label: "password set" | "password reset" | "password changed", email: string) {
+  return { field: "password", label, old: "", new: email };
 }
 
 export function removeJudge(accounts: Account[], email: string) {
@@ -157,7 +217,7 @@ export function admitGoogleIdentity(
   const existing = accounts.find((account) => account.email === email);
   if (existing?.status === "approved") return { accounts, outcome: "approved" as const, account: existing };
   if (existing?.status === "pending" || existing?.role === "admin") return { accounts, outcome: "pending" as const };
-  const requested = requestJudge(accounts, { name, email, passwordHash: input.passwordHash }, now);
+  const requested = requestJudge(accounts, { name, email, passwordHash: input.passwordHash, passwordChosen: false }, now);
   if (requested.error) return { accounts, error: requested.error };
   return { accounts: requested.accounts, outcome: "pending" as const };
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { loginResult, normalizeEmail, type Role } from "@/lib/accounts";
+import { loginDestination, loginResult, normalizeEmail, type Role } from "@/lib/accounts";
 import { verifyPassword } from "@/lib/password";
 import { sealSession, sessionCookie } from "@/lib/session";
 import { readAccounts } from "@/lib/store";
@@ -18,7 +18,16 @@ export async function POST(request: Request) {
   const account = accounts.find((item) => item.email === email);
   const result = loginResult(accounts, email, account ? verifyPassword(password, account.passwordHash) : false, role);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 401 });
-  const response = NextResponse.json({ role: result.account.role });
-  response.cookies.set(sessionCookie(await sealSession({ email: result.account.email, role: result.account.role })));
+  const mustChangePassword = result.account.role === "judge" && result.account.mustChangePassword === true;
+  const response = NextResponse.json({ role: result.account.role, next: loginDestination(result.account) });
+  response.cookies.set(
+    sessionCookie(
+      await sealSession({
+        email: result.account.email,
+        role: result.account.role,
+        ...(mustChangePassword ? { mustChangePassword: true } : {}),
+      }),
+    ),
+  );
   return response;
 }

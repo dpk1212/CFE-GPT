@@ -19,13 +19,14 @@ export function LoginForm({ next, secondary = false }: { next?: string; secondar
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, password, role }),
     });
-    const body = (await response.json().catch(() => null)) as { error?: string; role?: Role } | null;
+    const body = (await response.json().catch(() => null)) as { error?: string; role?: Role; next?: string } | null;
     setPending(false);
     if (!response.ok || !body?.role) {
       setError(body?.error ?? "Sign-in did not complete.");
       return;
     }
-    window.location.href = body.role === "admin" ? "/admin" : "/judge";
+    const nextPath = body.next === "/login/password/update" || body.next === "/admin" || body.next === "/judge" ? body.next : body.role === "admin" ? "/admin" : "/judge";
+    window.location.href = nextPath;
   }
 
   return (

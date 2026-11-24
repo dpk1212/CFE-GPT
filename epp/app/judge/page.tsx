@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function JudgePage() {
   const session = await openSession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!session || (session.role !== "judge" && session.role !== "admin")) redirect("/login?next=/judge");
+  if (session.role === "judge" && session.mustChangePassword) redirect("/login/password/update");
   const account = (await readAccounts()).find((item) => item.email === session.email);
   return (
     <>

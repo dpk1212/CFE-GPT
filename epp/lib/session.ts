@@ -6,6 +6,7 @@ export type Session = {
   email: string;
   role: "admin" | "judge";
   exp: number;
+  mustChangePassword?: boolean;
 };
 
 function secret() {
@@ -50,7 +51,12 @@ export async function openSession(token: string | undefined | null): Promise<Ses
   try {
     const parsed = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payload))) as Session;
     if (!parsed.email || (parsed.role !== "admin" && parsed.role !== "judge") || parsed.exp < Date.now()) return null;
-    return parsed;
+    return {
+      email: parsed.email,
+      role: parsed.role,
+      exp: parsed.exp,
+      ...(parsed.mustChangePassword === true ? { mustChangePassword: true } : {}),
+    };
   } catch {
     return null;
   }

@@ -2664,6 +2664,23 @@ p { margin: 0; }
   justify-content: flex-end;
   gap: 12px;
 }
+.judge-account { position: relative; }
+.judge-account summary { list-style: none; cursor: pointer; }
+.judge-account summary::-webkit-details-marker { display: none; }
+.judge-account-menu {
+  position: absolute;
+  right: 0;
+  z-index: 6;
+  min-width: 220px;
+  margin-top: 8px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid rgba(0, 39, 76, 0.16);
+  display: grid;
+  gap: 8px;
+}
+.one-time-password { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.one-time-password code { font-family: ui-monospace, monospace; letter-spacing: 0.03em; }
 .judge-progress-slim {
   min-width: 220px;
   display: grid;

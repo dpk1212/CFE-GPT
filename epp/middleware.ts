@@ -32,9 +32,23 @@ async function gate(request: NextRequest) {
   const judge = path.startsWith("/judge");
   if (admin && session?.role !== "admin") return loginRedirect(request, "/admin");
   if (judge && session?.role !== "admin" && session?.role !== "judge") return loginRedirect(request, "/judge");
+  if (session?.role === "judge" && session.mustChangePassword && (judge || path.startsWith("/api/judge"))) {
+    if (path.startsWith("/api/")) {
+      return NextResponse.json({ error: "Set a password before using the desk." }, { status: 403 });
+    }
+    return NextResponse.redirect(new URL("/login/password/update", appBase(request)));
+  }
   const response = NextResponse.next();
   if (session && sessionShouldSlide(session)) {
-    response.cookies.set(sessionCookie(await sealSession({ email: session.email, role: session.role })));
+    response.cookies.set(
+      sessionCookie(
+        await sealSession({
+          email: session.email,
+          role: session.role,
+          ...(session.mustChangePassword ? { mustChangePassword: true } : {}),
+        }),
+      ),
+    );
   }
   return response;
 }

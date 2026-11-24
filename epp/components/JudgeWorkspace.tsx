@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { InitialJudgesFeedbackPanel } from "@/components/InitialJudgesFeedbackPanel";
 import {
@@ -561,6 +562,15 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
         </div>
 
         <div className="judge-hero-slim-tools">
+          {adminView ? null : (
+            <details className="judge-account">
+              <summary className="btn-line">Account</summary>
+              <div className="judge-account-menu">
+                <p>{judgeEmail}</p>
+                <Link href="/login/password/update">Change password</Link>
+              </div>
+            </details>
+          )}
           <div className="judge-progress-slim" aria-label="Your review progress">
             <div className="judge-progress-slim-meta">
               <strong>{reviewedCount}</strong>
