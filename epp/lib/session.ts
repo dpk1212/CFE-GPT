@@ -1,5 +1,6 @@
 export const SESSION_COOKIE = "epp_session";
-const WEEK = 60 * 60 * 24 * 7;
+export const SESSION_SECONDS = 60 * 60 * 24 * 90;
+const SLIDE_AFTER_MS = (SESSION_SECONDS - 60 * 60 * 24) * 1000;
 
 export type Session = {
   email: string;
@@ -33,7 +34,7 @@ async function sign(payload: string) {
 }
 
 export async function sealSession(session: Omit<Session, "exp">) {
-  const payload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify({ ...session, exp: Date.now() + WEEK * 1000 })));
+  const payload = bytesToBase64Url(new TextEncoder().encode(JSON.stringify({ ...session, exp: Date.now() + SESSION_SECONDS * 1000 })));
   return `${payload}.${await sign(payload)}`;
 }
 
@@ -55,6 +56,10 @@ export async function openSession(token: string | undefined | null): Promise<Ses
   }
 }
 
+export function sessionShouldSlide(session: Session) {
+  return session.exp - Date.now() < SLIDE_AFTER_MS;
+}
+
 export function sessionCookie(token: string) {
   return {
     name: SESSION_COOKIE,
@@ -63,6 +68,6 @@ export function sessionCookie(token: string) {
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: WEEK,
+    maxAge: SESSION_SECONDS,
   };
 }

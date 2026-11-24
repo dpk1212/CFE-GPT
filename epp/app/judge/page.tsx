@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { JudgeWorkspace } from "@/components/JudgeWorkspace";
@@ -10,12 +11,17 @@ export const dynamic = "force-dynamic";
 
 export default async function JudgePage() {
   const session = await openSession((await cookies()).get(SESSION_COOKIE)?.value);
-  if (!session || session.role !== "judge") redirect("/login?next=/judge");
+  if (!session || (session.role !== "judge" && session.role !== "admin")) redirect("/login?next=/judge");
   const account = (await readAccounts()).find((item) => item.email === session.email);
   return (
-    <JudgeWorkspace
-      judgeName={account?.name ?? "Judge"}
-      judgeEmail={session.email}
-    />
+    <>
+      {session.role === "admin" ? (
+        <p className="view-banner">Viewing as judge. <Link href="/admin">Back to admin</Link></p>
+      ) : null}
+      <JudgeWorkspace
+        judgeName={account?.name ?? "Judge"}
+        judgeEmail={session.email}
+      />
+    </>
   );
 }

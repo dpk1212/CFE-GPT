@@ -88,6 +88,24 @@ export function createAdmin(accounts: Account[], input: { name: string; email: s
   return { accounts: [...accounts, next] };
 }
 
+export function admitGoogleIdentity(
+  accounts: Account[],
+  input: { name: string; email: string; passwordHash: string },
+  now: string,
+) {
+  const name = input.name.trim().replace(/\s+/g, " ");
+  const email = normalizeEmail(input.email);
+  if (name.length < 2 || !email.includes("@") || email.startsWith("@") || email.endsWith("@")) {
+    return { accounts, error: "Google did not return a usable name and email." };
+  }
+  const existing = accounts.find((account) => account.email === email);
+  if (existing?.status === "approved") return { accounts, outcome: "approved" as const, account: existing };
+  if (existing?.status === "pending" || existing?.role === "admin") return { accounts, outcome: "pending" as const };
+  const requested = requestJudge(accounts, { name, email, passwordHash: input.passwordHash }, now);
+  if (requested.error) return { accounts, error: requested.error };
+  return { accounts: requested.accounts, outcome: "pending" as const };
+}
+
 export function loginResult(accounts: Account[], email: string, passwordMatches: boolean, role: Role) {
   const account = accounts.find((item) => item.email === normalizeEmail(email));
   if (!account || !passwordMatches) return { ok: false as const, error: "Email or password is incorrect." };

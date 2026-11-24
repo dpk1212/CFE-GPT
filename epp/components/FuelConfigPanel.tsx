@@ -1,31 +1,31 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { applicationsForStage } from "@/lib/fuelJudge/catalog";
 import { COLUMN_LABELS, COLUMN_ORDER } from "@/lib/fuelJudge/columns";
 import { DEFAULT_FUEL_CONFIG } from "@/lib/fuelJudge/defaults";
 import {
   FUEL_PIPELINES,
   FUEL_STATUSES,
+  type FuelApplication,
   type FuelColumnId,
   type FuelJudgeConfig,
   type FuelStageConfig,
 } from "@/lib/fuelJudge/types";
 
-export function FuelConfigPanel() {
+export function FuelConfigPanel({ applications }: { applications: FuelApplication[] }) {
   const [config, setConfig] = useState<FuelJudgeConfig>(DEFAULT_FUEL_CONFIG);
+  const [editingId, setEditingId] = useState(DEFAULT_FUEL_CONFIG.activeStageId);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [openStages, setOpenStages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const response = await fetch("/api/admin/fuel-config");
-      const body = (await response.json().catch(() => null)) as
-        | { config?: FuelJudgeConfig; error?: string }
-        | null;
+      const body = (await response.json().catch(() => null)) as { config?: FuelJudgeConfig; error?: string } | null;
       if (cancelled) return;
       if (!response.ok || !body?.config) {
         setError(body?.error ?? "Stage configuration could not be loaded.");
@@ -33,28 +33,13 @@ export function FuelConfigPanel() {
         return;
       }
       setConfig(body.config);
+      setEditingId(body.config.activeStageId);
       setLoaded(true);
     })();
-    try {
-      const stored = JSON.parse(localStorage.getItem("epp-admin-stage-open") ?? "{}") as unknown;
-      if (stored && typeof stored === "object") {
-        setOpenStages(stored as Record<string, boolean>);
-      }
-    } catch {
-      setOpenStages({});
-    }
     return () => {
       cancelled = true;
     };
   }, []);
-
-  function toggleStage(stageId: string) {
-    setOpenStages((current) => {
-      const next = { ...current, [stageId]: !current[stageId] };
-      localStorage.setItem("epp-admin-stage-open", JSON.stringify(next));
-      return next;
-    });
-  }
 
   function updateStage(stageId: string, patch: Partial<FuelStageConfig>) {
     setConfig((current) => ({
@@ -85,9 +70,7 @@ export function FuelConfigPanel() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(config),
     });
-    const body = (await response.json().catch(() => null)) as
-      | { config?: FuelJudgeConfig; error?: string }
-      | null;
+    const body = (await response.json().catch(() => null)) as { config?: FuelJudgeConfig; error?: string } | null;
     setBusy(false);
     if (!response.ok || !body?.config) {
       setError(body?.error ?? "The configuration was not saved.");
@@ -97,139 +80,103 @@ export function FuelConfigPanel() {
     setMessage("Judge dashboard configuration saved.");
   }
 
-  if (!loaded) {
-    return <p className="quiet">Loading judge dashboard configuration…</p>;
-  }
+  if (!loaded) return <p className="console-status">Loading judge desk setup.</p>;
+
+  const stage = config.stages.find((item) => item.id === editingId) ?? config.stages[0];
+  const active = config.stages.find((item) => item.id === config.activeStageId) ?? config.stages[0];
+  const visibleCount = applicationsForStage(applications, active).length;
 
   return (
-    <form className="fuel-config" onSubmit={save}>
-      <div className="fuel-config-head">
-        <h2>Fuel desk</h2>
-        <p>Every approved judge sees the same queue. There is no per-judge assignment. Choose the active stage, then set its title, statuses, pipelines, columns, and form.</p>
-      </div>
-
-      <fieldset className="choice-set">
-        <legend>Active stage</legend>
-        <div className="stage-switch">
-          {config.stages.map((stage) => (
-            <label key={stage.id} className={config.activeStageId === stage.id ? "on" : undefined}>
-              <input
-                type="radio"
-                name="activeStage"
-                checked={config.activeStageId === stage.id}
-                onChange={() => setConfig({ ...config, activeStageId: stage.id })}
-              />
-              <strong>{stage.name}</strong>
-              <span>{stage.form === "written" ? "Written review form" : "Pitch funding form"}</span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      {config.stages.map((stage) => {
-        const open = Boolean(openStages[stage.id]);
-        return (
-        <section key={stage.id} className="fuel-stage-card">
+    <form className="desk-setup" onSubmit={save}>
+      <p className="console-lead">Every approved judge sees the same queue. There is no per-judge assignment.</p>
+      <div className="stage-switch">
+        {config.stages.map((item) => (
           <button
-            className="stage-toggle"
+            key={item.id}
             type="button"
-            aria-expanded={open}
-            aria-controls={`stage-panel-${stage.id}`}
-            onClick={() => toggleStage(stage.id)}
+            className={item.id === stage?.id ? "on" : undefined}
+            aria-pressed={item.id === stage?.id}
+            onClick={() => setEditingId(item.id)}
           >
-            <span>{stage.id === "written" ? "Stage 1" : "Stage 2"}</span>
-            <strong>{stage.name}</strong>
-            <em>{open ? "Hide" : "Edit"}</em>
+            <strong>{item.id === "written" ? "Stage 1" : "Stage 2"}</strong>
+            <span>{item.name}</span>
+            {item.id === config.activeStageId ? <em>Judges see this</em> : null}
           </button>
-          {open ? <div id={`stage-panel-${stage.id}`} className="stage-panel">
-          <label>
-            Title shown to judges
-            <input
-              value={stage.name}
-              onChange={(event) => updateStage(stage.id, { name: event.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Form
-            <select
-              value={stage.form}
-              onChange={(event) =>
-                updateStage(stage.id, { form: event.target.value === "pitch" ? "pitch" : "written" })
-              }
-            >
-              <option value="written">Written application review</option>
-              <option value="pitch">Pitch and funding feedback</option>
-            </select>
-          </label>
-
-          <fieldset className="check-grid">
-            <legend>Statuses on this desk</legend>
-            {FUEL_STATUSES.map((status) => (
-              <label key={status}>
-                <input
-                  type="checkbox"
-                  checked={stage.statuses.includes(status)}
-                  onChange={(event) =>
-                    updateStage(stage.id, {
-                      statuses: toggleListValue(stage.statuses, status, event.target.checked),
-                    })
-                  }
-                />
-                {status}
-              </label>
-            ))}
-          </fieldset>
-
-          <fieldset className="check-grid">
-            <legend>Pipelines</legend>
-            {FUEL_PIPELINES.map((pipeline) => (
-              <label key={pipeline}>
-                <input
-                  type="checkbox"
-                  checked={stage.pipelines.includes(pipeline)}
-                  onChange={(event) =>
-                    updateStage(stage.id, {
-                      pipelines: toggleListValue(stage.pipelines, pipeline, event.target.checked),
-                    })
-                  }
-                />
-                {pipeline}
-              </label>
-            ))}
-          </fieldset>
-
-          <fieldset className="check-grid">
-            <legend>Visible columns</legend>
-            {COLUMN_ORDER.map((column) => (
-              <label key={column}>
-                <input
-                  type="checkbox"
-                  checked={stage.columns.includes(column)}
-                  onChange={(event) => toggleColumns(stage.id, column, event.target.checked)}
-                />
-                {COLUMN_LABELS[column]}
-              </label>
-            ))}
-          </fieldset>
-          </div> : null}
-        </section>
-        );
-      })}
-
-      <button className="btn-maize-border" type="submit" disabled={busy}>
-        {busy ? "Saving…" : "Save judge dashboard"}
-      </button>
-      {error ? (
-        <p className="form-note" role="alert">
-          {error}
-        </p>
+        ))}
+      </div>
+      {stage ? (
+        <div className="setup-grid">
+          <section className="setup-card">
+            <h2>Stage</h2>
+            <label>
+              Title shown to judges
+              <input value={stage.name} onChange={(event) => updateStage(stage.id, { name: event.target.value })} required />
+            </label>
+            <label>
+              Form
+              <select
+                value={stage.form}
+                onChange={(event) => updateStage(stage.id, { form: event.target.value === "pitch" ? "pitch" : "written" })}
+              >
+                <option value="written">Written application review</option>
+                <option value="pitch">Pitch and funding feedback</option>
+              </select>
+            </label>
+            {stage.id === config.activeStageId ? (
+              <p className="field-help">This is the stage on the judge desk.</p>
+            ) : (
+              <button className="btn-line" type="button" onClick={() => setConfig({ ...config, activeStageId: stage.id })}>
+                Show this stage to judges
+              </button>
+            )}
+          </section>
+          <section className="setup-card">
+            <h2>Queue statuses</h2>
+            <div className="choice-chips">
+              {FUEL_STATUSES.map((status) => {
+                const on = stage.statuses.includes(status);
+                return (
+                  <button key={status} type="button" aria-pressed={on} onClick={() => updateStage(stage.id, { statuses: toggleListValue(stage.statuses, status, !on) })}>
+                    {status}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+          <section className="setup-card">
+            <h2>Pipelines</h2>
+            <div className="choice-chips">
+              {FUEL_PIPELINES.map((pipeline) => {
+                const on = stage.pipelines.includes(pipeline);
+                return (
+                  <button key={pipeline} type="button" aria-pressed={on} onClick={() => updateStage(stage.id, { pipelines: toggleListValue(stage.pipelines, pipeline, !on) })}>
+                    {pipeline}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+          <section className="setup-card">
+            <h2>Visible fields</h2>
+            <div className="choice-chips">
+              {COLUMN_ORDER.map((column) => {
+                const on = stage.columns.includes(column);
+                return (
+                  <button key={column} type="button" aria-pressed={on} onClick={() => toggleColumns(stage.id, column, !on)}>
+                    {COLUMN_LABELS[column]}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       ) : null}
-      {message ? (
-        <p className="form-note success" role="status">
-          {message}
-        </p>
-      ) : null}
+      <div className="console-save">
+        <p>With this setup, judges see {visibleCount} application{visibleCount === 1 ? "" : "s"} in {active?.name}.</p>
+        <button className="btn" type="submit" disabled={busy}>{busy ? "Saving…" : "Save desk setup"}</button>
+      </div>
+      {error ? <p className="form-note" role="alert">{error}</p> : null}
+      {message ? <p className="form-note" role="status">{message}</p> : null}
     </form>
   );
 }

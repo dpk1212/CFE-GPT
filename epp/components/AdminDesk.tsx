@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export type DeskAccount = {
@@ -9,6 +9,7 @@ export type DeskAccount = {
   role: "admin" | "judge";
   status: "pending" | "approved" | "declined";
   createdAt: string;
+  reviewedAt?: string | null;
 };
 
 function when(value: string) {
@@ -21,11 +22,12 @@ function when(value: string) {
   }).format(new Date(value));
 }
 
-export function AdminDesk({ accounts }: { accounts: DeskAccount[] }) {
+export function AdminAccounts({ accounts, view }: { accounts: DeskAccount[]; view: "judges" | "admins" }) {
   const router = useRouter();
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
-  const pending = accounts.filter((account) => account.status === "pending");
+  const pending = accounts.filter((account) => account.role === "judge" && account.status === "pending");
   const judges = accounts.filter((account) => account.role === "judge" && account.status === "approved");
   const admins = accounts.filter((account) => account.role === "admin" && account.status === "approved");
 
@@ -64,52 +66,110 @@ export function AdminDesk({ accounts }: { accounts: DeskAccount[] }) {
       return;
     }
     form.reset();
+    dialogRef.current?.close();
     setMessage("Admin account created. They can sign in now.");
     router.refresh();
   }
 
+  if (view === "judges") {
+    return (
+      <div className="console-stack">
+        <section>
+          <h2>Waiting for approval <span className="count-badge">{pending.length}</span></h2>
+          {pending.length === 0 ? <p className="quiet">No judge requests are waiting.</p> : (
+            <div className="console-table-wrap">
+              <table className="console-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Requested</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pending.map((account) => (
+                    <tr key={account.email}>
+                      <th scope="row">{account.name}</th>
+                      <td>{account.email}</td>
+                      <td>{when(account.createdAt)} ET</td>
+                      <td className="row-actions">
+                        <button className="btn-solid" type="button" disabled={busy === account.email} onClick={() => review(account.email, "approve")}>Approve</button>
+                        <button className="btn-line" type="button" disabled={busy === account.email} onClick={() => review(account.email, "decline")}>Decline</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        <section>
+          <h2>Approved judges <span className="count-badge">{judges.length}</span></h2>
+          {judges.length === 0 ? <p className="quiet">No judges are approved yet.</p> : (
+            <div className="console-table-wrap">
+              <table className="console-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Since</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {judges.map((account) => (
+                    <tr key={account.email}>
+                      <th scope="row">{account.name}</th>
+                      <td>{account.email}</td>
+                      <td>{when(account.reviewedAt || account.createdAt)} ET</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        {message ? <p className="form-note" role="status">{message}</p> : null}
+      </div>
+    );
+  }
+
   return (
-    <div className="desk">
-      <section>
-        <h2>Waiting for approval</h2>
-        {pending.length === 0 ? <p className="quiet">No judge requests are waiting.</p> : null}
-        <ul className="request-list">
-          {pending.map((account) => (
-            <li key={account.email}>
-              <div>
-                <strong>{account.name}</strong>
-                <span>{account.email}</span>
-                <em>Requested {when(account.createdAt)} ET</em>
-              </div>
-              <div className="row-actions">
-                <button className="btn-solid" type="button" disabled={busy === account.email} onClick={() => review(account.email, "approve")}>Approve</button>
-                <button className="btn-line" type="button" disabled={busy === account.email} onClick={() => review(account.email, "decline")}>Decline</button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <section>
-        <h2>Approved judges</h2>
-        {judges.length === 0 ? <p className="quiet">No judges are approved yet.</p> : (
-          <ul className="plain-list">
-            {judges.map((account) => <li key={account.email}><strong>{account.name}</strong> {account.email}</li>)}
-          </ul>
-        )}
-      </section>
-      <section>
-        <h2>Admins</h2>
-        <ul className="plain-list">
-          {admins.map((account) => <li key={account.email}><strong>{account.name}</strong> {account.email}</li>)}
-        </ul>
-        <form className="stack-form compact" onSubmit={createAdminAccount}>
+    <div className="console-stack">
+      <div className="section-bar">
+        <h2>Admins <span className="count-badge">{admins.length}</span></h2>
+        <button className="btn" type="button" onClick={() => dialogRef.current?.showModal()}>Add an admin</button>
+      </div>
+      <div className="console-table-wrap">
+        <table className="console-table">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {admins.map((account) => (
+              <tr key={account.email}>
+                <th scope="row">{account.name}</th>
+                <td>{account.email}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <dialog ref={dialogRef} className="confirm-dialog">
+        <form className="stack-form" onSubmit={createAdminAccount}>
           <h3>Add an admin</h3>
           <label>Name<input name="name" required /></label>
           <label>Email<input name="email" type="email" required /></label>
-          <label>Password<input name="password" type="password" minLength={8} required /></label>
-          <button className="btn-solid" type="submit" disabled={busy === "create"}>{busy === "create" ? "Saving" : "Create admin"}</button>
+          <label>Password<input name="password" type="password" minLength={8} required autoComplete="new-password" /></label>
+          <div className="judge-form-actions">
+            <button className="btn-line" type="button" onClick={() => dialogRef.current?.close()}>Cancel</button>
+            <button className="btn-solid" type="submit" disabled={busy === "create"}>{busy === "create" ? "Saving" : "Create admin"}</button>
+          </div>
         </form>
-      </section>
+      </dialog>
       {message ? <p className="form-note" role="status">{message}</p> : null}
     </div>
   );

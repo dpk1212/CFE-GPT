@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { EDITABLE_FIELDS, readEditable, type EditableDeal } from "@/lib/fuelAdmin/fields";
 import type { FuelAuditEntry } from "@/lib/fuelAdmin/store";
 import { FUEL_PIPELINES, FUEL_STATUSES, type FuelApplication } from "@/lib/fuelJudge/types";
@@ -14,6 +14,12 @@ type BoardPayload = {
 
 type ChangeRow = { label: string; old: string; new: string };
 
+const GROUPS = [
+  { id: "basics", title: "Basics", keys: ["projectName", "stage", "pipeline", "summary", "industries"] },
+  { id: "funding", title: "Funding", keys: ["fundingRequested"] },
+  { id: "documents", title: "Documents", keys: EDITABLE_FIELDS.filter((field) => field.kind === "url").map((field) => field.key) },
+] as const;
+
 function money(value: number | null) {
   if (value == null) return "—";
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
@@ -24,13 +30,26 @@ function shown(value: string | number | null) {
   return String(value);
 }
 
-export function PipelineBoard() {
-  const [board, setBoard] = useState<BoardPayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState("");
+export function PipelineBoard({
+  board,
+  loading,
+  loadError,
+  onReload,
+  stage,
+  pipeline,
+  onStage,
+  onPipeline,
+}: {
+  board: BoardPayload | null;
+  loading: boolean;
+  loadError: string;
+  onReload: () => Promise<void> | void;
+  stage: string;
+  pipeline: string;
+  onStage: (stage: string) => void;
+  onPipeline: (pipeline: string) => void;
+}) {
   const [query, setQuery] = useState("");
-  const [pipeline, setPipeline] = useState("All");
-  const [stageFilter, setStageFilter] = useState("All");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<EditableDeal | null>(null);
   const [pending, setPending] = useState<ChangeRow[]>([]);
@@ -40,58 +59,19 @@ export function PipelineBoard() {
   const [busy, setBusy] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
-  function load() {
-    setLoadError("");
-    return fetch("/api/admin/fuel-pipeline")
-      .then(async (response) => {
-        const body = (await response.json().catch(() => null)) as (BoardPayload & { error?: string }) | null;
-        if (!response.ok || !body?.applications) {
-          setLoadError(body?.error ?? "The Fuel pipeline could not be loaded.");
-          setBoard(null);
-          return;
-        }
-        setBoard(body);
-      })
-      .catch(() => setLoadError("The Fuel pipeline could not be loaded."))
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/admin/fuel-pipeline")
-      .then(async (response) => {
-        const body = (await response.json().catch(() => null)) as (BoardPayload & { error?: string }) | null;
-        if (cancelled) return;
-        if (!response.ok || !body?.applications) {
-          setLoadError(body?.error ?? "The Fuel pipeline could not be loaded.");
-          return;
-        }
-        setBoard(body);
-      })
-      .catch(() => {
-        if (!cancelled) setLoadError("The Fuel pipeline could not be loaded.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const rows = useMemo(() => {
     const applications = board?.applications ?? [];
     const needle = query.trim().toLowerCase();
     return applications.filter((application) => {
       if (pipeline !== "All" && application.pipeline !== pipeline) return false;
-      if (stageFilter !== "All" && application.stage !== stageFilter) return false;
+      if (stage !== "All" && application.stage !== stage) return false;
       if (!needle) return true;
       return [application.projectName, application.summary, application.industries, application.stage, application.pipeline]
         .join(" ")
         .toLowerCase()
         .includes(needle);
     });
-  }, [board, pipeline, query, stageFilter]);
+  }, [board, pipeline, query, stage]);
 
   const groups = useMemo(() => {
     const order = [...FUEL_STATUSES];
@@ -99,10 +79,11 @@ export function PipelineBoard() {
       if (!order.includes(row.stage as (typeof FUEL_STATUSES)[number])) order.push(row.stage as (typeof FUEL_STATUSES)[number]);
     }
     return order
-      .map((stage) => ({ stage, rows: rows.filter((row) => row.stage === stage) }))
+      .map((name) => ({ stage: name, rows: rows.filter((row) => row.stage === name) }))
       .filter((group) => group.rows.length);
   }, [rows]);
 
+  const emptyStages = FUEL_STATUSES.filter((name) => !rows.some((row) => row.stage === name));
   const selected = board?.applications.find((row) => row.id === selectedId) ?? null;
 
   function openApplication(application: FuelApplication) {
@@ -111,6 +92,11 @@ export function PipelineBoard() {
     setMessage("");
     setError("");
     setPreview(null);
+  }
+
+  function closeDrawer() {
+    setSelectedId(null);
+    setDraft(null);
   }
 
   function changesFromDraft() {
@@ -159,24 +145,65 @@ export function PipelineBoard() {
     }
     setPreview(body.wrote ? null : (body.record ?? null));
     setMessage(body.wrote ? `Saved ${body.application.projectName} in Fuel CRM.` : `Dry run for ${body.application.projectName}. Fuel CRM was not updated.`);
-    await load();
+    await onReload();
     setSelectedId(body.application.id);
     setDraft(readEditable(body.application));
   }
 
+  function fieldControl(field: (typeof EDITABLE_FIELDS)[number]) {
+    if (!draft) return null;
+    if (field.kind === "stage") {
+      return (
+        <select value={draft.stage} onChange={(event) => setDraft({ ...draft, stage: event.target.value })}>
+          {FUEL_STATUSES.map((item) => <option key={item}>{item}</option>)}
+        </select>
+      );
+    }
+    if (field.kind === "pipeline") {
+      return (
+        <select value={draft.pipeline} onChange={(event) => setDraft({ ...draft, pipeline: event.target.value })}>
+          {FUEL_PIPELINES.map((item) => <option key={item}>{item}</option>)}
+        </select>
+      );
+    }
+    if (field.kind === "money") {
+      return (
+        <input
+          inputMode="numeric"
+          value={draft.fundingRequested ?? ""}
+          onChange={(event) => {
+            const raw = event.target.value.trim();
+            if (raw === "") setDraft({ ...draft, fundingRequested: null });
+            else if (/^\d+(\.\d+)?$/.test(raw)) setDraft({ ...draft, fundingRequested: Number(raw) });
+          }}
+        />
+      );
+    }
+    if (field.kind === "url" || field.key === "summary") {
+      return (
+        <textarea
+          rows={field.key === "summary" ? 3 : 2}
+          value={(draft[field.key] as string | null) ?? ""}
+          onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
+        />
+      );
+    }
+    return (
+      <input
+        value={String(draft[field.key] ?? "")}
+        onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
+      />
+    );
+  }
+
   return (
     <section className="pipeline-board" aria-labelledby="pipeline-heading">
-      <div className="fuel-config-head">
-        <h2 id="pipeline-heading">Pipeline</h2>
-        <p>
-          Every Fuel application, grouped by stage. Owner, contact, cycle, and deadline are not fields this desk reads, so they are not edited here.
-        </p>
-      </div>
+      <p id="pipeline-heading" className="sr-only">Pipeline</p>
       {loading && !board ? <p className="desk-status">Loading the Fuel pipeline.</p> : null}
       {loadError ? (
         <div>
           <p className="form-note" role="alert">{loadError}</p>
-          <button className="btn" type="button" onClick={() => void load()}>Try again</button>
+          <button className="btn" type="button" onClick={() => void onReload()}>Try again</button>
         </div>
       ) : null}
       {board ? (
@@ -197,59 +224,59 @@ export function PipelineBoard() {
             </label>
             <label>
               Pipeline
-              <select value={pipeline} onChange={(event) => setPipeline(event.target.value)}>
+              <select value={pipeline} onChange={(event) => onPipeline(event.target.value)}>
                 <option>All</option>
                 {FUEL_PIPELINES.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
             <label>
               Stage
-              <select value={stageFilter} onChange={(event) => setStageFilter(event.target.value)}>
+              <select value={stage} onChange={(event) => onStage(event.target.value)}>
                 <option>All</option>
                 {FUEL_STATUSES.map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
           </div>
-          <div className={selected ? "pipeline-layout is-open" : "pipeline-layout"}>
-            <div className="pipeline-groups">
-              {board.applications.length === 0 ? <p className="desk-empty">No Fuel applications are on this desk.</p> : null}
-              {board.applications.length > 0 && rows.length === 0 ? <p className="desk-empty">No applications match those filters.</p> : null}
-              {groups.map((group) => (
-                <section key={group.stage} className="pipeline-group">
-                  <header>
-                    <h3>{group.stage}</h3>
-                    <span>{group.rows.length}</span>
-                  </header>
-                  <table className="desk-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Project</th>
-                        <th scope="col">Pipeline</th>
-                        <th scope="col">Funding</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.rows.map((application) => (
-                        <tr key={application.id} className={application.id === selectedId ? "is-selected" : undefined}>
-                          <th scope="row">
-                            <button type="button" className="desk-name" onClick={() => openApplication(application)}>
-                              {application.projectName}
-                            </button>
-                            {application.summary ? <span className="desk-summary">{application.summary}</span> : null}
-                          </th>
-                          <td>{application.pipeline}</td>
-                          <td>{money(application.fundingRequested)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </section>
-              ))}
-            </div>
-            <aside className="pipeline-drawer" aria-label="Application detail">
-              {!selected || !draft ? (
-                <p className="desk-empty">Select an application to review its fields.</p>
-              ) : (
+          {board.applications.length === 0 ? <p className="desk-empty">No Fuel applications are on this desk.</p> : null}
+          {board.applications.length > 0 && rows.length === 0 ? <p className="desk-empty">No applications match those filters.</p> : null}
+          {stage === "All" && emptyStages.length ? (
+            <p className="desk-note">Empty right now: {emptyStages.join(", ")}.</p>
+          ) : null}
+          {groups.map((group) => (
+            <section key={group.stage} className="pipeline-group">
+              <header>
+                <h3>{group.stage}</h3>
+                <span>{group.rows.length}</span>
+              </header>
+              <table className="desk-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Project</th>
+                    <th scope="col">Pipeline</th>
+                    <th scope="col">Funding</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.rows.map((application) => (
+                    <tr key={application.id} className={application.id === selectedId ? "is-selected" : undefined}>
+                      <th scope="row">
+                        <button type="button" className="desk-name" onClick={() => openApplication(application)}>
+                          {application.projectName}
+                        </button>
+                        {application.summary ? <span className="desk-summary">{application.summary}</span> : null}
+                      </th>
+                      <td>{application.pipeline}</td>
+                      <td>{money(application.fundingRequested)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          ))}
+          {selected && draft ? (
+            <div className="drawer-layer">
+              <button className="drawer-scrim" type="button" aria-label="Close application" onClick={closeDrawer} />
+              <aside className="pipeline-drawer" aria-label="Application detail">
                 <form
                   onSubmit={(event) => {
                     event.preventDefault();
@@ -258,42 +285,18 @@ export function PipelineBoard() {
                 >
                   <div className="read-head">
                     <h3>{selected.projectName}</h3>
-                    <button className="btn-line" type="button" onClick={() => { setSelectedId(null); setDraft(null); }}>Close</button>
+                    <button className="btn-line" type="button" onClick={closeDrawer}>Close</button>
                   </div>
-                  {EDITABLE_FIELDS.map((field) => (
-                    <label key={field.key}>
-                      {field.label}
-                      {field.kind === "stage" ? (
-                        <select value={draft.stage} onChange={(event) => setDraft({ ...draft, stage: event.target.value })}>
-                          {FUEL_STATUSES.map((item) => <option key={item}>{item}</option>)}
-                        </select>
-                      ) : field.kind === "pipeline" ? (
-                        <select value={draft.pipeline} onChange={(event) => setDraft({ ...draft, pipeline: event.target.value })}>
-                          {FUEL_PIPELINES.map((item) => <option key={item}>{item}</option>)}
-                        </select>
-                      ) : field.kind === "money" ? (
-                        <input
-                          inputMode="numeric"
-                          value={draft.fundingRequested ?? ""}
-                          onChange={(event) => {
-                            const raw = event.target.value.trim();
-                            if (raw === "") setDraft({ ...draft, fundingRequested: null });
-                            else if (/^\d+(\.\d+)?$/.test(raw)) setDraft({ ...draft, fundingRequested: Number(raw) });
-                          }}
-                        />
-                      ) : field.kind === "url" || field.key === "summary" ? (
-                        <textarea
-                          rows={field.key === "summary" ? 3 : 2}
-                          value={(draft[field.key] as string | null) ?? ""}
-                          onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
-                        />
-                      ) : (
-                        <input
-                          value={String(draft[field.key] ?? "")}
-                          onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
-                        />
-                      )}
-                    </label>
+                  {GROUPS.map((group) => (
+                    <fieldset key={group.id} className="drawer-group">
+                      <legend>{group.title}</legend>
+                      {EDITABLE_FIELDS.filter((field) => (group.keys as readonly string[]).includes(field.key)).map((field) => (
+                        <label key={field.key}>
+                          {field.label}
+                          {fieldControl(field)}
+                        </label>
+                      ))}
+                    </fieldset>
                   ))}
                   <button className="btn" type="submit" disabled={busy}>{busy ? "Saving…" : "Review change"}</button>
                   {error ? <p className="form-note" role="alert">{error}</p> : null}
@@ -305,25 +308,9 @@ export function PipelineBoard() {
                     </details>
                   ) : null}
                 </form>
-              )}
-            </aside>
-          </div>
-          <div className="pipeline-audit">
-            <h3>Recent field changes</h3>
-            {board.audit.length === 0 ? <p>No field changes have been recorded.</p> : (
-              <ul>
-                {board.audit.map((entry) => (
-                  <li key={entry.id}>
-                    <strong>{entry.projectName}</strong>
-                    <span>{entry.wrote ? "Written to Fuel CRM" : "Dry run"} · {entry.email} · {new Date(entry.at).toLocaleString("en-US", { timeZone: "America/New_York" })} ET</span>
-                    {entry.changes.map((change) => (
-                      <span key={`${entry.id}-${change.field}`}>{change.label}: {change.old || "—"} → {change.new || "—"}</span>
-                    ))}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+              </aside>
+            </div>
+          ) : null}
           <dialog ref={dialogRef} className="confirm-dialog">
             <h3>Confirm this change</h3>
             <table className="desk-table">

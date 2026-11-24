@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import type { Role } from "@/lib/accounts";
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, secondary = false }: { next?: string; secondary?: boolean }) {
   const [role, setRole] = useState<Role>(next === "/admin" ? "admin" : "judge");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +29,8 @@ export function LoginForm({ next }: { next?: string }) {
   }
 
   return (
-    <form className="stack-form" onSubmit={onSubmit}>
+    <form className={secondary ? "stack-form password-fallback" : "stack-form"} onSubmit={onSubmit}>
+      {secondary ? <h2>Password</h2> : null}
       <fieldset className="role-toggle">
         <legend>Sign in as</legend>
         <div className="segment" role="group" aria-label="Sign in as">
