@@ -2,7 +2,7 @@ import Link from "next/link";
 import { SignOut } from "@/components/SignOut";
 import type { Session } from "@/lib/session";
 
-export function Header({ session }: { session: Session | null }) {
+export function Header({ session, clerk = false }: { session: Session | null; clerk?: boolean }) {
   return (
     <header className="site-header">
       <div className="container site-header-inner">
@@ -14,7 +14,7 @@ export function Header({ session }: { session: Session | null }) {
           {session?.role === "admin" ? <Link href="/admin">Admin</Link> : null}
           {session?.role === "admin" ? <Link href="/judge">View as judge</Link> : null}
           {session?.role === "judge" ? <Link href="/judge">Fuel desk</Link> : null}
-          {session ? <SignOut /> : <Link className="btn header-login" href="/login">Log in</Link>}
+          {session ? <SignOut clerk={clerk} /> : <Link className="btn header-login" href="/login">Log in</Link>}
         </nav>
       </div>
     </header>

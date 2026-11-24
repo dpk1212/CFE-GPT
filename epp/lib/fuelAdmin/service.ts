@@ -1,6 +1,7 @@
 import { SAMPLE_APPLICATIONS } from "@/lib/fuelJudge/catalog";
 import { dealToApplication, FUEL_DEAL_FIELDS } from "@/lib/fuelJudge/mapping";
 import { FuelJudgeError, fuelCrmMode } from "@/lib/fuelJudge/service";
+import { postCoqlAll } from "@/lib/zohoCoql";
 import { getZohoAccessToken, readZohoCatalog, rememberZohoCatalog, ZohoRateLimitError, ZohoTokenError } from "@/lib/zohoToken";
 import { FUEL_PIPELINES, FUEL_STATUSES, type FuelApplication } from "@/lib/fuelJudge/types";
 import {
@@ -29,7 +30,8 @@ export async function listFuelPipeline(options?: {
   const state = await loadFuelAdminState({ durable: options?.durable });
   const source = options?.source ?? listFromConfiguredSource;
   try {
-    const applications = (await source())
+    const listed = await source();
+    const applications = listed
       .filter((row) => (FUEL_PIPELINES as readonly string[]).includes(row.pipeline))
       .map((row) => mergeOverlay(row, state.overlays[row.id]));
     return {
@@ -37,6 +39,8 @@ export async function listFuelPipeline(options?: {
       writesEnabled: fuelAdminWritesEnabled(),
       applications,
       audit: state.audit.slice(-12).reverse(),
+      truncated: listedMeta(listed).truncated,
+      omitted: listedMeta(listed).omitted,
       syncing: false,
     };
   } catch (err) {
@@ -49,6 +53,8 @@ export async function listFuelPipeline(options?: {
       writesEnabled: fuelAdminWritesEnabled(),
       applications,
       audit: state.audit.slice(-12).reverse(),
+      truncated: false,
+      omitted: 0,
       syncing: true,
     };
   }
@@ -126,13 +132,17 @@ async function listFromConfiguredSource() {
   }
   const domain = requiredEnv("FUEL_ZOHO_API_DOMAIN");
   const pipelines = FUEL_PIPELINES.map((pipeline) => `'${pipeline.replace(/'/g, "")}'`).join(",");
-  const rows = await coql(token, domain, `select ${FUEL_DEAL_FIELDS} from Deals where Pipeline in (${pipelines}) limit 200`);
-  const applications = rows
-    .map((row) => dealToApplication(row))
+  const collected = await postCoqlAll(token, domain, `select ${FUEL_DEAL_FIELDS} from Deals where Pipeline in (${pipelines})`);
+  if (!collected.ok) throw new FuelJudgeError(collected.message, 502);
+  const mapped = collected.rows.map((row) => dealToApplication(row));
+  const applications = mapped
     .filter((row): row is FuelApplication => Boolean(row))
     .filter((row) => (FUEL_PIPELINES as readonly string[]).includes(row.pipeline));
+  const listed = applications as FuelApplication[] & { truncated?: boolean; omitted?: number };
+  listed.truncated = collected.truncated;
+  listed.omitted = mapped.filter((row) => !row).length;
   await rememberZohoCatalog("admin", applications);
-  return applications;
+  return listed;
 }
 
 async function updateDealInZoho(id: string, fields: Record<string, string | number | null>) {
@@ -169,19 +179,9 @@ async function updateDealInZoho(id: string, fields: Record<string, string | numb
   return { id: row.details.id };
 }
 
-async function coql(token: string, domain: string, selectQuery: string) {
-  const response = await fetch(`${domain}/crm/v8/coql`, {
-    method: "POST",
-    headers: {
-      Authorization: `Zoho-oauthtoken ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ select_query: selectQuery }),
-  });
-  if (response.status === 204) return [];
-  const payload = (await response.json()) as { data?: Record<string, unknown>[]; message?: string };
-  if (!response.ok) throw new FuelJudgeError(payload.message || "Fuel CRM could not be read.", 502);
-  return payload.data || [];
+function listedMeta(applications: FuelApplication[]) {
+  const extra = applications as FuelApplication[] & { truncated?: boolean; omitted?: number };
+  return { truncated: Boolean(extra.truncated), omitted: extra.omitted ?? 0 };
 }
 
 async function fuelAccessToken() {

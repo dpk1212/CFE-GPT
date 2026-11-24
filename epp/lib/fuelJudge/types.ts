@@ -70,6 +70,8 @@ export type FuelApplication = {
   pitchDeckUrl: string | null;
   videoUrl: string | null;
   additionalUrl: string | null;
+  /** Last CRM edit. This is not the time the deal entered its current stage. */
+  modifiedTime?: string | null;
   /** Stage-1 strengths and improvement notes already on the application. */
   initialFeedback: string[];
 };

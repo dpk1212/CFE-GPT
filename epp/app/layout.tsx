@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Poppins } from "next/font/google";
 import { cookies } from "next/headers";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { clerkAppearance, clerkConfigured } from "@/lib/clerk";
 import { openSession, SESSION_COOKIE } from "@/lib/session";
 import "./globals.css";
 
@@ -15,14 +17,21 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await openSession((await cookies()).get(SESSION_COOKIE)?.value);
-  return (
+  const clerk = clerkConfigured();
+  const page = (
     <html lang="en" className={sans.variable}>
       <body>
         <a className="skip" href="#content">Skip to content</a>
-        <Header session={session} />
+        <Header session={session} clerk={clerk} />
         <main id="content">{children}</main>
         <Footer />
       </body>
     </html>
+  );
+  if (!clerk) return page;
+  return (
+    <ClerkProvider appearance={clerkAppearance} signInUrl="/login" signUpUrl="/login" afterSignOutUrl="/">
+      {page}
+    </ClerkProvider>
   );
 }

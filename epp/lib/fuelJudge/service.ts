@@ -1,3 +1,4 @@
+import { postCoqlAll } from "@/lib/zohoCoql";
 import { getZohoAccessToken, readZohoCatalog, rememberZohoCatalog, ZohoRateLimitError, ZohoTokenError } from "@/lib/zohoToken";
 import { SAMPLE_APPLICATIONS, applicationsForStage } from "./catalog";
 import {
@@ -144,11 +145,9 @@ async function listFromConfiguredSource() {
     pipelines.length === 1
       ? `Pipeline = '${escapeCoql(pipelines[0])}'`
       : `Pipeline in (${pipelines.map((pipeline) => `'${escapeCoql(pipeline)}'`).join(",")})`;
-  const rows = await coql(
-    token,
-    domain,
-    `select ${FUEL_DEAL_FIELDS} from Deals where ${pipelineClause} limit 200`,
-  );
+  const collected = await postCoqlAll(token, domain, `select ${FUEL_DEAL_FIELDS} from Deals where ${pipelineClause}`);
+  if (!collected.ok) throw new FuelJudgeError(collected.message, 502);
+  const rows = collected.rows;
   const applications = rows
     .map((row) => dealToApplication(row))
     .filter((row): row is FuelApplication => Boolean(row));
@@ -173,12 +172,15 @@ async function listFromConfiguredSource() {
 async function stageOneFeedback(token: string, domain: string, ids: string[]) {
   const byApplication = new Map<string, string[]>();
   if (!ids.length) return byApplication;
-  const quoted = ids.map((id) => `'${id.replace(/'/g, "")}'`).join(",");
-  const reviews = await coql(
-    token,
-    domain,
-    `select Application1, Review_Type, Final_Feedback_or_Outstanding_Questions_for_Team, Areas_for_Improvement from Application_Review where Application1 in (${quoted}) limit 200`,
-  );
+  const reviews: Record<string, unknown>[] = [];
+  for (let index = 0; index < ids.length; index += 40) {
+    const quoted = ids.slice(index, index + 40).map((id) => `'${id.replace(/'/g, "")}'`).join(",");
+    reviews.push(...await coql(
+      token,
+      domain,
+      `select Application1, Review_Type, Final_Feedback_or_Outstanding_Questions_for_Team, Areas_for_Improvement from Application_Review where Application1 in (${quoted}) limit 200`,
+    ));
+  }
   for (const review of reviews) {
     if (text(review.Review_Type) !== STAGE1_REVIEW_TYPE) continue;
     const note = feedbackFromReview(review);

@@ -45,6 +45,7 @@ const DEAL_FIELDS = [
   "Supporting_URL",
   "Video_demo_etc_URL",
   "Additional_Doc_URL",
+  "Modified_Time",
 ].join(",");
 
 export const FUEL_DEAL_FIELDS = DEAL_FIELDS;
@@ -74,6 +75,7 @@ export function dealToApplication(
     pitchDeckUrl: textOrNull(row.Supporting_URL),
     videoUrl: textOrNull(row.Video_demo_etc_URL),
     additionalUrl: textOrNull(row.Additional_Doc_URL),
+    modifiedTime: textOrNull(row.Modified_Time),
     initialFeedback,
   };
 }

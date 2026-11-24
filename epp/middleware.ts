@@ -1,7 +1,9 @@
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
+import { clerkConfigured } from "@/lib/clerk";
 import { openSession, sealSession, sessionCookie, sessionShouldSlide, SESSION_COOKIE } from "@/lib/session";
 
-export async function middleware(request: NextRequest) {
+async function gate(request: NextRequest) {
   const session = await openSession(request.cookies.get(SESSION_COOKIE)?.value);
   const path = request.nextUrl.pathname;
   const admin = path.startsWith("/admin");
@@ -23,4 +25,11 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/", "/login", "/request", "/admin/:path*", "/judge/:path*"] };
+const withClerk = clerkMiddleware(async (_auth, request) => gate(request));
+
+export default function middleware(request: NextRequest, event: Parameters<typeof withClerk>[1]) {
+  if (!clerkConfigured()) return gate(request);
+  return withClerk(request, event);
+}
+
+export const config = { matcher: ["/", "/login", "/login/:path*", "/request", "/admin/:path*", "/judge/:path*"] };

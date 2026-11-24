@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SignIn } from "@clerk/nextjs";
 import { LoginForm } from "@/components/LoginForm";
-import { googleConfigured } from "@/lib/googleAuth";
+import { clerkAppearance, clerkConfigured } from "@/lib/clerk";
 
 export const metadata: Metadata = { title: "Log in" };
 
@@ -17,7 +18,20 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const params = await searchParams;
   const next = params.next === "/admin" || params.next === "/judge" ? params.next : undefined;
   const notice = params.notice ? NOTICES[params.notice] : undefined;
-  const google = googleConfigured();
+  if (!clerkConfigured()) {
+    return (
+      <article className="gate">
+        <section className="panel login-panel">
+          <p className="eyebrow">Center for Entrepreneurship</p>
+          <h1>Sign in</h1>
+          {notice ? <p className="form-note" role="status">{notice}</p> : null}
+          <LoginForm next={next} />
+          <p className="quiet"><Link href="/request">Request judge access</Link></p>
+        </section>
+      </article>
+    );
+  }
+  const redirectUrl = next ? `/login/continue?next=${next}` : "/login/continue";
   return (
     <article className="gate">
       <section className="panel login-panel">
@@ -25,9 +39,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <h1>Sign in</h1>
         <p className="quiet">Use the Google account that matches your approved judge or admin email.</p>
         {notice ? <p className="form-note" role="status">{notice}</p> : null}
-        {google ? <a className="btn google-login" href="/api/auth/google">Continue with Google</a> : null}
-        <LoginForm next={next} secondary={google} />
-        <p className="quiet"><Link href="/request">Request judge access</Link></p>
+        <SignIn
+          routing="path"
+          path="/login"
+          signUpUrl="/login"
+          forceRedirectUrl={redirectUrl}
+          fallbackRedirectUrl={redirectUrl}
+          appearance={clerkAppearance}
+        />
+        <p className="quiet"><Link href="/login/password">Use a password instead</Link></p>
       </section>
     </article>
   );
