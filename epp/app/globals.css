@@ -2531,15 +2531,44 @@ p { margin: 0; }
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
 }
 .feedback-doc-actions .btn {
+  min-height: 44px;
+  padding: 12px 22px;
+  border-width: 2px;
+  border-radius: 8px;
+  letter-spacing: 0.08em;
   background: var(--maize);
   color: var(--blue);
   border-color: var(--maize);
 }
-.feedback-doc-actions .btn-line {
-  border-color: rgba(255, 255, 255, 0.45);
+.feedback-doc-actions .btn:hover,
+.feedback-doc-actions .btn:focus-visible {
+  background: #ffe066;
+  color: var(--blue);
+  border-color: #ffe066;
+}
+/* Ghost secondary on navy: never inherit .btn-line's white fill (white-on-white). */
+.feedback-doc-actions .btn-line,
+.feedback-doc-cover .btn-line {
+  min-height: 44px;
+  padding: 12px 22px;
+  border-width: 2px;
+  border-radius: 8px;
+  letter-spacing: 0.08em;
+  background: transparent;
   color: var(--white);
+  border-color: rgba(255, 255, 255, 0.92);
+}
+.feedback-doc-actions .btn-line:hover,
+.feedback-doc-actions .btn-line:focus-visible,
+.feedback-doc-cover .btn-line:hover,
+.feedback-doc-cover .btn-line:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--white);
+  border-color: var(--maize);
+  outline: none;
 }
 .feedback-doc-cover .quiet { color: rgba(255, 255, 255, 0.72); margin-top: 10px; }
 .feedback-doc-tabs {
