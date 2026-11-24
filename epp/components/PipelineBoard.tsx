@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { PIPELINE_VIEW_KEY, money, pipelineShort, shown } from "@/components/admin/adminFormat";
-import { EDITABLE_FIELDS, readEditable, type EditableDeal } from "@/lib/fuelAdmin/fields";
+import { useEffect, useMemo, useState } from "react";
+import { ApplicationReview } from "@/components/admin/ApplicationReview";
+import { PIPELINE_VIEW_KEY, money, pipelineShort } from "@/components/admin/adminFormat";
+import type { EditableDeal } from "@/lib/fuelAdmin/fields";
 import {
   completeness,
   feedbackBadge,
@@ -22,15 +23,8 @@ type BoardPayload = {
   truncated?: boolean;
 };
 
-type ChangeRow = { label: string; old: string; new: string };
 type ViewMode = "board" | "table";
 type SortKey = "projectName" | "pipeline" | "stage" | "fundingRequested" | "completeness" | "feedback";
-
-const GROUPS = [
-  { id: "basics", title: "Basics", keys: ["projectName", "stage", "pipeline", "summary", "industries"] },
-  { id: "funding", title: "Funding", keys: ["fundingRequested"] },
-  { id: "documents", title: "Documents", keys: EDITABLE_FIELDS.filter((field) => field.kind === "url").map((field) => field.key) },
-] as const;
 
 function stageTone(stage: string) {
   if (stage === "Needs Completeness Check" || stage === "Student Revision Needed") return "warn";
@@ -71,13 +65,10 @@ export function PipelineBoard({
   const [view, setView] = useState<ViewMode>("board");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "projectName", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<EditableDeal | null>(null);
-  const [pending, setPending] = useState<ChangeRow[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<Record<string, unknown> | null>(null);
   const [busy, setBusy] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     try {
@@ -146,7 +137,6 @@ export function PipelineBoard({
 
   function openApplication(application: FuelApplication) {
     setSelectedId(application.id);
-    setDraft(readEditable(application));
     setMessage("");
     setError("");
     setPreview(null);
@@ -154,34 +144,10 @@ export function PipelineBoard({
 
   function closeDrawer() {
     setSelectedId(null);
-    setDraft(null);
   }
 
-  function changesFromDraft() {
-    if (!selected || !draft) return [];
-    const current = readEditable(selected);
-    return EDITABLE_FIELDS.flatMap((field) => {
-      const oldValue = shown(current[field.key]);
-      const newValue = shown(draft[field.key]);
-      if (oldValue === newValue) return [];
-      return [{ label: field.label, old: oldValue, new: newValue }];
-    });
-  }
-
-  function askConfirm() {
-    const changes = changesFromDraft();
-    if (!changes.length) {
-      setError("No fields changed.");
-      return;
-    }
-    setError("");
-    setPending(changes);
-    dialogRef.current?.showModal();
-  }
-
-  async function confirmSave() {
-    if (!selected || !draft) return;
-    dialogRef.current?.close();
+  async function saveDraft(draft: EditableDeal) {
+    if (!selected) return;
     setBusy(true);
     setError("");
     setMessage("");
@@ -205,53 +171,6 @@ export function PipelineBoard({
     setMessage(body.wrote ? `Saved ${body.application.projectName} in Fuel CRM.` : `Dry run for ${body.application.projectName}. Fuel CRM was not updated.`);
     await onReload();
     setSelectedId(body.application.id);
-    setDraft(readEditable(body.application));
-  }
-
-  function fieldControl(field: (typeof EDITABLE_FIELDS)[number]) {
-    if (!draft) return null;
-    if (field.kind === "stage") {
-      return (
-        <select value={draft.stage} onChange={(event) => setDraft({ ...draft, stage: event.target.value })}>
-          {FUEL_STATUSES.map((item) => <option key={item}>{item}</option>)}
-        </select>
-      );
-    }
-    if (field.kind === "pipeline") {
-      return (
-        <select value={draft.pipeline} onChange={(event) => setDraft({ ...draft, pipeline: event.target.value })}>
-          {FUEL_PIPELINES.map((item) => <option key={item}>{item}</option>)}
-        </select>
-      );
-    }
-    if (field.kind === "money") {
-      return (
-        <input
-          inputMode="numeric"
-          value={draft.fundingRequested ?? ""}
-          onChange={(event) => {
-            const raw = event.target.value.trim();
-            if (raw === "") setDraft({ ...draft, fundingRequested: null });
-            else if (/^\d+(\.\d+)?$/.test(raw)) setDraft({ ...draft, fundingRequested: Number(raw) });
-          }}
-        />
-      );
-    }
-    if (field.kind === "url" || field.key === "summary") {
-      return (
-        <textarea
-          rows={field.key === "summary" ? 3 : 2}
-          value={(draft[field.key] as string | null) ?? ""}
-          onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
-        />
-      );
-    }
-    return (
-      <input
-        value={String(draft[field.key] ?? "")}
-        onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
-      />
-    );
   }
 
   function toggleSort(key: SortKey) {
@@ -427,70 +346,18 @@ export function PipelineBoard({
             </div>
           ) : null}
 
-          {selected && draft ? (
-            <div className="drawer-layer">
-              <button className="drawer-scrim" type="button" aria-label="Close application" onClick={closeDrawer} />
-              <aside className="pipeline-drawer" aria-label="Application detail">
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    askConfirm();
-                  }}
-                >
-                  <div className="read-head">
-                    <h3>{selected.projectName}</h3>
-                    <button className="btn-line" type="button" onClick={closeDrawer}>Close</button>
-                  </div>
-                  {GROUPS.map((group) => (
-                    <fieldset key={group.id} className="drawer-group">
-                      <legend>{group.title}</legend>
-                      {EDITABLE_FIELDS.filter((field) => (group.keys as readonly string[]).includes(field.key)).map((field) => (
-                        <label key={field.key}>
-                          {field.label}
-                          {fieldControl(field)}
-                        </label>
-                      ))}
-                    </fieldset>
-                  ))}
-                  <button className="btn" type="submit" disabled={busy}>{busy ? "Saving…" : "Review change"}</button>
-                  {error ? <p className="form-note" role="alert">{error}</p> : null}
-                  {message ? <p className="form-note" role="status">{message}</p> : null}
-                  {preview ? (
-                    <details className="payload-preview" open>
-                      <summary>Payload preview</summary>
-                      <pre>{JSON.stringify(preview, null, 2)}</pre>
-                    </details>
-                  ) : null}
-                </form>
-              </aside>
-            </div>
+          {selected ? (
+            <ApplicationReview
+              application={selected}
+              writesEnabled={board.writesEnabled}
+              busy={busy}
+              message={message}
+              error={error}
+              preview={preview}
+              onClose={closeDrawer}
+              onSave={saveDraft}
+            />
           ) : null}
-
-          <dialog ref={dialogRef} className="confirm-dialog">
-            <h3>Confirm this change</h3>
-            <table className="desk-table">
-              <thead>
-                <tr>
-                  <th scope="col">Field</th>
-                  <th scope="col">Current</th>
-                  <th scope="col">New</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pending.map((change) => (
-                  <tr key={change.label}>
-                    <th scope="row">{change.label}</th>
-                    <td>{change.old}</td>
-                    <td>{change.new}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="judge-form-actions">
-              <button className="btn-line" type="button" onClick={() => dialogRef.current?.close()}>Cancel</button>
-              <button className="btn" type="button" onClick={() => void confirmSave()}>Confirm</button>
-            </div>
-          </dialog>
         </>
       ) : null}
     </section>
