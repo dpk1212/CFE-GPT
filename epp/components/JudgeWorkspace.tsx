@@ -308,14 +308,14 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea, select")) return;
-      const inQueue = Boolean(target?.closest(".desk-queue"));
-      if (target && target !== document.body && !inQueue) return;
+      if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
       if (!rows.length) return;
-      if (event.key !== "j" && event.key !== "k" && event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      const forward = event.key === "j" || event.key === "ArrowDown" || event.key === "ArrowRight";
+      const backward = event.key === "k" || event.key === "ArrowUp" || event.key === "ArrowLeft";
+      if (!forward && !backward) return;
       event.preventDefault();
       const current = Math.max(0, rows.findIndex((row) => row.id === selectedId));
-      const next = event.key === "j" || event.key === "ArrowDown" ? Math.min(rows.length - 1, current + 1) : Math.max(0, current - 1);
+      const next = forward ? Math.min(rows.length - 1, current + 1) : Math.max(0, current - 1);
       setSelectedId(rows[next]?.id ?? null);
     }
     window.addEventListener("keydown", onKey);
@@ -405,15 +405,17 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
 
   if (loading) {
     return (
-      <div className="desk-page" aria-busy="true">
-        <p className="desk-status">Loading the Fuel desk.</p>
+      <div className="desk-page judge-desk" aria-busy="true">
+        <div className="cc-skeleton">
+          <div className="cc-card is-skeleton tall" />
+        </div>
       </div>
     );
   }
 
   if (loadError || !dashboard) {
     return (
-      <div className="desk-page">
+      <div className="desk-page judge-desk">
         <p className="form-note" role="alert">{loadError || "The Fuel desk could not be loaded."}</p>
         <button className="btn" type="button" onClick={() => void load()}>Try again</button>
       </div>
@@ -425,42 +427,41 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
   const materials = dashboard.stage.columns
     .filter((column) => LINK_COLUMNS.has(column))
     .map((column) => ({ column, link: selected ? linkFor(selected, column) : null }));
+  const progress = dashboard.applications.length
+    ? Math.round((reviewedCount / dashboard.applications.length) * 100)
+    : 0;
 
   return (
-    <div className="desk-page">
-      <header className="desk-stage">
-        <div>
-          <p className="desk-kicker">Fuel</p>
+    <div className="desk-page judge-desk">
+      <header className="judge-hero">
+        <div className="judge-hero-copy">
+          <p className="cc-eyebrow">Fuel · Judge desk</p>
           <h1>{dashboard.stage.name}</h1>
-          <p className="desk-statuses">{dashboard.stage.statuses.join(" · ")}</p>
+          <p className="judge-hero-note">
+            Signed in as {judgeName}.
+            {dashboard.mode === "mock"
+              ? " Sample applications. Nothing on this desk is written to Zoho."
+              : dashboard.writesEnabled
+                ? " Applications are read from Fuel CRM."
+                : " Applications are read from Fuel CRM. Submitted reviews stay on this desk until CRM writes are on."}
+          </p>
         </div>
-        <dl className="desk-counts">
-          <div>
-            <dt>In this stage</dt>
-            <dd>{dashboard.applications.length}</dd>
+        <div className="judge-progress" aria-label="Your review progress">
+          <div className="judge-progress-meta">
+            <strong>{reviewedCount}</strong>
+            <span>of {dashboard.applications.length} reviewed</span>
+            <em>{openCount} open</em>
           </div>
-          <div>
-            <dt>Reviewed by you</dt>
-            <dd>{reviewedCount}</dd>
+          <div className="judge-progress-track" aria-hidden="true">
+            <span style={{ width: `${progress}%` }} />
           </div>
-          <div>
-            <dt>Still open</dt>
-            <dd>{openCount}</dd>
-          </div>
-        </dl>
+          <p className="judge-progress-hint">{dashboard.stage.statuses.join(" · ")}</p>
+        </div>
       </header>
       {dashboard.syncing ? <p className="desk-note">CRM syncing</p> : null}
-      <p className="desk-note">
-        Signed in as {judgeName}. Every approved judge sees this queue.
-        {dashboard.mode === "mock"
-          ? " These are sample applications. Nothing on this desk is written to Zoho."
-          : dashboard.writesEnabled
-            ? " Applications are read from Fuel CRM."
-            : " Applications are read from Fuel CRM. A submitted review stays on this desk until CRM writes are turned on."}
-      </p>
 
-      <div className="desk-workspace">
-        <section className="desk-queue" aria-label="Applications for review">
+      <div className="desk-workspace judge-workspace">
+        <section className="desk-queue judge-queue" aria-label="Applications for review">
           <div className="desk-queue-bar">
             <h2>Applications</h2>
             <label className="desk-search">
@@ -473,7 +474,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
               />
             </label>
           </div>
-          <div className="desk-sort">
+          <div className="desk-sort judge-sort">
             <span>Sort</span>
             <SortButton label="Project" sortKey="projectName" sort={sort} onSort={toggleSort} />
             <SortButton label="Status" sortKey="stage" sort={sort} onSort={toggleSort} />
@@ -485,94 +486,98 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
           ) : rows.length === 0 ? (
             <p className="desk-empty">No applications match that search.</p>
           ) : (
-            <div className="desk-table-wrap">
-              <table className="desk-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Project</th>
-                    {columns.has("fundingRequested") ? <th scope="col">Funding</th> : null}
-                    {columns.has("totalReviews") ? <th scope="col">Reviews</th> : null}
-                    <th scope="col">You</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((application) => {
-                    const mine = reviewed.has(application.id);
-                    const active = application.id === selectedId;
-                    return (
-                      <tr
-                        key={application.id}
-                        className={active ? "is-selected" : undefined}
-                        aria-selected={active}
-                        onClick={() => setSelectedId(application.id)}
-                      >
-                        <th scope="row">
-                          <button type="button" className="desk-name" onClick={() => setSelectedId(application.id)}>
-                            {application.projectName}
-                          </button>
-                          {columns.has("summary") ? <span className="desk-summary">{application.summary}</span> : null}
-                          <span className="status-chip">{application.stage}</span>
-                        </th>
-                        {columns.has("fundingRequested") ? <td>{money(application.fundingRequested)}</td> : null}
-                        {columns.has("totalReviews") ? <td>{application.totalReviews ?? "—"}</td> : null}
-                        <td>{mine ? <span className="mine-chip">Reviewed</span> : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <ul className="judge-card-list">
+              {rows.map((application) => {
+                const mine = reviewed.has(application.id);
+                const active = application.id === selectedId;
+                return (
+                  <li key={application.id}>
+                    <button
+                      type="button"
+                      className={`judge-app-card${active ? " is-selected" : ""}${mine ? " is-reviewed" : ""}`}
+                      aria-current={active ? "true" : undefined}
+                      onClick={() => setSelectedId(application.id)}
+                    >
+                      <span className={`review-status${mine ? " is-done" : ""}`} aria-label={mine ? "Reviewed by you" : "Still open"}>
+                        {mine ? "Reviewed" : "Open"}
+                      </span>
+                      <strong>{application.projectName}</strong>
+                      {columns.has("summary") && application.summary ? (
+                        <span className="judge-card-summary">{application.summary}</span>
+                      ) : null}
+                      <span className="judge-card-meta">
+                        <span className={`stage-chip tone-active`}>{application.stage}</span>
+                        {columns.has("fundingRequested") ? <em>{money(application.fundingRequested)}</em> : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          <p className="desk-keys">J and K move through the queue when you are not typing in a field.</p>
+          <p className="desk-keys">J / K or ← / → move through the queue when you are not typing.</p>
         </section>
 
-        <section className="desk-read" aria-label="Application and review">
+        <section className="desk-read judge-read" aria-label="Application and review">
           {!selected ? (
             <p className="desk-empty">Select an application to read it and start a review.</p>
           ) : (
             <>
-              <div className="read-head">
+              <div className="read-head judge-read-head">
                 <div>
-                  <p className="eyebrow">Application {selectedIndex >= 0 ? selectedIndex + 1 : "—"} of {rows.length}</p>
-                  <h2>{selected.projectName}</h2>
-                  <span className="status-chip">{selected.stage}</span>
+                  <p className="cc-eyebrow">
+                    Application {selectedIndex >= 0 ? selectedIndex + 1 : "—"} of {rows.length}
+                    {reviewed.has(selected.id) ? " · Reviewed by you" : ""}
+                  </p>
+                  <h2 className="judge-title">{selected.projectName}</h2>
+                  <span className="stage-chip tone-active">{selected.stage}</span>
                 </div>
                 <div className="read-move">
                   <button className="btn-line" type="button" onClick={() => move(-1)} disabled={selectedIndex <= 0}>Previous</button>
                   <button className="btn-line" type="button" onClick={() => move(1)} disabled={selectedIndex < 0 || selectedIndex >= rows.length - 1}>Next</button>
                 </div>
               </div>
-              <p className="read-summary">{selected.summary || "No one-sentence summary is on this application."}</p>
-              <dl className="read-facts">
+
+              <blockquote className="judge-pullquote">
+                {selected.summary || "No one-sentence summary is on this application."}
+              </blockquote>
+
+              <dl className="read-facts judge-facts">
+                {columns.has("fundingRequested") ? (
+                  <div><dt>Funding</dt><dd>{money(selected.fundingRequested)}</dd></div>
+                ) : null}
                 {columns.has("industries") ? (
                   <div><dt>Industries</dt><dd>{selected.industries || "—"}</dd></div>
                 ) : null}
-                {columns.has("fundingRequested") ? (
-                  <div><dt>Funding requested</dt><dd>{money(selected.fundingRequested)}</dd></div>
-                ) : null}
+                <div><dt>Pipeline</dt><dd>{selected.pipeline}</dd></div>
                 {columns.has("totalReviews") ? (
-                  <div><dt>Total reviews</dt><dd>{selected.totalReviews ?? "—"}</dd></div>
+                  <div><dt>Reviews</dt><dd>{selected.totalReviews ?? "—"}</dd></div>
                 ) : null}
               </dl>
+
               {materials.length ? (
-                <ul className="read-links">
-                  {materials.map(({ column, link }) => (
-                    <li key={column}>
-                      {link ? (
-                        <a href={link.href} target="_blank" rel="noreferrer">
-                          {link.label}
-                          <span aria-hidden="true"> ↗</span>
-                          <span className="sr-only"> (opens in a new tab)</span>
-                        </a>
-                      ) : (
-                        <span>{COLUMN_LABELS[column]} is not attached</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <section className="judge-docs">
+                  <h3>Documents</h3>
+                  <ul className="doc-checklist">
+                    {materials.map(({ column, link }) => (
+                      <li key={column} className={link ? "is-present" : "is-missing"}>
+                        <span>{COLUMN_LABELS[column]}</span>
+                        {link ? (
+                          <a href={link.href} target="_blank" rel="noreferrer">
+                            Open
+                            <span className="sr-only"> (opens in a new tab)</span>
+                          </a>
+                        ) : (
+                          <em>Missing</em>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ) : null}
+
               {columns.has("initialFeedback") ? (
-                <div className="read-feedback">
+                <div className="read-feedback judge-prior-feedback">
                   <h3>Initial judge feedback</h3>
                   {selected.initialFeedback.length ? (
                     selected.initialFeedback.map((note) => <p key={note}>{note}</p>)
@@ -582,9 +587,9 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
                 </div>
               ) : null}
 
-              <form className="judge-form" onSubmit={submitReview}>
+              <form className="judge-form judge-form-elite" onSubmit={submitReview}>
                 <div className="judge-form-head">
-                  <p className="eyebrow">Step {formStep} of {FORM_STEPS[formId].length}</p>
+                  <p className="cc-eyebrow">Step {formStep} of {FORM_STEPS[formId].length}</p>
                   <ol className="form-steps" aria-label="Review steps">
                     {FORM_STEPS[formId].map((label, index) => {
                       const step = index + 1;

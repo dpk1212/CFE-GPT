@@ -16,7 +16,10 @@ export default async function JudgePage() {
   return (
     <>
       {session.role === "admin" ? (
-        <p className="view-banner">Viewing as judge. <Link href="/admin">Back to admin</Link></p>
+        <p className="view-banner view-banner-slim">
+          <span>Viewing as judge</span>
+          <Link href="/admin">Back to admin</Link>
+        </p>
       ) : null}
       <JudgeWorkspace
         judgeName={account?.name ?? "Judge"}
