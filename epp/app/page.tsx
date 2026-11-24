@@ -7,6 +7,8 @@ const programs = [
     title: "Entrepreneurial Leadership Program",
     href: "https://cfe.umich.edu/launch/entrepreneurial-leadership-program/",
     link: "Visit the ELP page",
+    photo: "/photos/elp.webp",
+    alt: "Entrepreneurial Leadership Program students in ELP fleece talking beside a whiteboard",
     text: "ELP blends hands-on learning with coaching. It is a path into a changemaker mindset and the leadership skills to build a venture during or after college.",
     points: [
       "Open to undergraduate and graduate students from every school and college.",
@@ -21,6 +23,8 @@ const programs = [
     title: "Perot Jain TechLab Series",
     href: "https://cfe.umich.edu/launch/perot-jain-techlab-series/",
     link: "Visit the Perot Jain TechLab page",
+    photo: "/photos/techlab-mcity.webp",
+    alt: "Perot Jain TechLab students with a Mcity vehicle, one adjusting roof sensors while another sits in the driver's seat",
     text: "TechLab puts student teams on real technical work with startups. The series is preparation for students who want to be at the front of a new technology.",
     points: [
       "Open to undergraduate and graduate students. Teams are chosen through an application.",
@@ -35,6 +39,8 @@ const programs = [
     title: "Student Endeavors",
     href: "https://cfe.umich.edu/launch/erp-student-sources/",
     link: "Visit Student Endeavors",
+    photo: "/photos/student-endeavors.webp",
+    alt: "Students in a workshop gathered around a wheeled robot with a camera and exposed wiring",
     text: "Endeavors is where a student idea gets room to move. The Center makes space for special programs, competitions, and events beyond the year-long cohorts.",
     points: [
       "Creativity is encouraged, and the obstacles in the way of a student project are taken seriously.",
@@ -58,6 +64,14 @@ export default function HomePage() {
   return (
     <>
       <section className="page-header">
+        <img
+          className="page-header-photo"
+          src="/photos/students-walking.webp"
+          alt="Students crossing a downtown street, several wearing University of Michigan and Entrepreneurial Leadership Program shirts"
+          width={1800}
+          height={850}
+        />
+        <div className="page-header-shade" aria-hidden="true" />
         <svg className="page-lines" viewBox="0 0 640 480" aria-hidden="true">
           <line x1="120" y1="500" x2="420" y2="-20" />
           <line x1="210" y1="500" x2="510" y2="-20" />
@@ -90,23 +104,19 @@ export default function HomePage() {
           <div className="program-row">
             {programs.map((program) => (
               <article key={program.title} className={program.tone}>
-                <p className="card-kicker">{program.kicker}</p>
-                <h3>{program.title}</h3>
-                <p>{program.text}</p>
-                <ul>
-                  {program.points.map((point) => <li key={point}>{point}</li>)}
-                </ul>
-                <ExternalLink href={program.href}>{program.link}</ExternalLink>
+                <img className="card-photo" src={program.photo} alt={program.alt} />
+                <div className="card-body">
+                  <p className="card-kicker">{program.kicker}</p>
+                  <h3>{program.title}</h3>
+                  <p>{program.text}</p>
+                  <ul>
+                    {program.points.map((point) => <li key={point}>{point}</li>)}
+                  </ul>
+                  <ExternalLink href={program.href}>{program.link}</ExternalLink>
+                </div>
               </article>
             ))}
           </div>
-        </div>
-      </section>
-      <section className="facts" aria-label="Program facts">
-        <div className="container facts-row">
-          <article><strong>Every school</strong><span>Undergraduate and graduate students may apply.</span></article>
-          <article><strong>One year</strong><span>Winter and fall courses, three credits each term.</span></article>
-          <article><strong>By selection</strong><span>A formal application decides the cohort.</span></article>
         </div>
       </section>
       <section className="quote">
