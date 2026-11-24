@@ -40,6 +40,7 @@ export function InitialJudgesFeedbackPanel({
         onClick={toggle}
         aria-expanded={open}
       >
+        <span className="initial-judges-feedback-kicker">Anonymized · Rubric order</span>
         <span className="initial-judges-feedback-label">Initial judges&apos; feedback</span>
         <span className="initial-judges-feedback-action">{open ? "Minimize" : "Expand"}</span>
       </button>
