@@ -221,9 +221,7 @@ export function ApplicationReview({
               ) : null}
               {feedbackWarning ? <p className="quiet">{feedbackWarning}</p> : null}
               {reviews.length === 0 && application.initialFeedback.length === 0 ? (
-                <p className="app-empty-feedback">
-                  No judge feedback is on this desk yet. Judge reviews stay dry-run while FUEL_CRM_WRITES is off.
-                </p>
+                <p className="app-empty-feedback">No judge reviews yet.</p>
               ) : null}
               {application.initialFeedback.map((note, index) => (
                 <article key={`note-${index}`} className="feedback-card">
@@ -277,8 +275,8 @@ export function ApplicationReview({
           >
             <p className="quiet">
               {writesEnabled
-                ? "Confirmed edits write to Fuel CRM. Judge reviews are not written from this desk."
-                : "Confirmed edits stay on this desk until FUEL_ADMIN_WRITES is on. Judge reviews stay dry-run."}
+                ? "Confirmed edits write to Fuel CRM."
+                : "Confirmed edits stay on this desk until admin writes are enabled."}
             </p>
             <div className="app-edit-grid">
               {EDITABLE_FIELDS.map((field) => (

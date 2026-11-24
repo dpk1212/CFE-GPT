@@ -66,6 +66,18 @@ test("empty pitch round does not break when only initial reviews exist", () => {
   assert.equal(doc.rounds.some((round) => round.reviewType === PITCH_REVIEW_TYPE), false);
 });
 
+test("zero reviews still build a clean empty document", () => {
+  const doc = buildFeedbackDocument({
+    applicationId: "1382923000099457001",
+    projectName: "VORI",
+    mode: "live",
+    reviews: [],
+  });
+  assert.equal(doc.reviewCount, 0);
+  assert.equal(doc.rounds.length, 0);
+  assert.equal(doc.omittedConflict, 0);
+});
+
 test("isConflict matches Yes only", () => {
   assert.equal(isConflict({ Conflict_of_Interest: "Yes" }), true);
   assert.equal(isConflict({ Conflict_of_Interest: "No" }), false);

@@ -1,3 +1,4 @@
+import React from "react";
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { RUBRIC_URL, type FeedbackDocument, type FeedbackRound } from "./types";
 
@@ -139,8 +140,20 @@ const styles = StyleSheet.create({
   empty: {
     color: muted,
     fontSize: 9,
-    fontStyle: "italic",
     marginBottom: 6,
+  },
+  emptyTitle: {
+    fontSize: 13,
+    fontFamily: "Helvetica-Bold",
+    color: navy,
+    marginTop: 18,
+    marginBottom: 6,
+  },
+  emptyBody: {
+    color: muted,
+    fontSize: 10,
+    marginBottom: 6,
+    maxWidth: 420,
   },
   footer: {
     position: "absolute",
@@ -189,7 +202,13 @@ export function FeedbackPdfDocument({ doc }: { doc: FeedbackDocument }) {
         {doc.warning ? <Text style={styles.empty}>{doc.warning}</Text> : null}
 
         {doc.rounds.length === 0 ? (
-          <Text style={styles.empty}>No eligible judge reviews are linked to this application.</Text>
+          <View style={styles.section}>
+            <View style={styles.sectionRule} />
+            <Text style={styles.emptyTitle}>No judge feedback yet</Text>
+            <Text style={styles.emptyBody}>
+              Linked judge reviews will appear here once they are submitted. Conflict-of-interest reviews are omitted automatically.
+            </Text>
+          </View>
         ) : (
           doc.rounds.map((round) => <RoundBlock key={round.id} round={round} />)
         )}

@@ -91,7 +91,7 @@ export function FeedbackDocView({
       ) : null}
 
       {active ? <RoundView round={active} /> : (
-        <p className="app-empty-feedback">No eligible judge reviews are linked to this application yet.</p>
+        <p className="app-empty-feedback">No judge reviews yet.</p>
       )}
     </div>
   );

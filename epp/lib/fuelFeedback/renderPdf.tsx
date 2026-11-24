@@ -1,8 +1,11 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { FeedbackPdfDocument } from "./pdf";
+import { ensurePdfFonts } from "./registerPdfFonts";
 import type { FeedbackDocument } from "./types";
 
 export async function renderFeedbackPdf(doc: FeedbackDocument) {
+  ensurePdfFonts();
+  // JSX keeps DocumentProps typing happy for @react-pdf/renderer.
   return renderToBuffer(<FeedbackPdfDocument doc={doc} />);
 }
 

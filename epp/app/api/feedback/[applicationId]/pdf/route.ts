@@ -31,6 +31,7 @@ export async function GET(
     if (err instanceof FeedbackError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
+    console.error("feedback pdf failed", err);
     return NextResponse.json({ error: "The feedback PDF could not be generated." }, { status: 502 });
   }
 }
