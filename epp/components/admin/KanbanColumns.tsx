@@ -4,7 +4,6 @@ import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
   type DraggableAttributes,
@@ -18,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { ReactNode } from "react";
+import { horizontalColumnCollision } from "@/components/admin/columnCollision";
 
 export type ColumnDragHandle = {
   attributes: DraggableAttributes;
@@ -40,7 +40,7 @@ export function KanbanColumns({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={horizontalColumnCollision}
       onDragEnd={(event) => {
         const activeId = String(event.active.id);
         const overId = event.over ? String(event.over.id) : "";
