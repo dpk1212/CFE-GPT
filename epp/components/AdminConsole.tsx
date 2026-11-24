@@ -1,25 +1,27 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminAccounts } from "@/components/AdminDesk";
+import { ControlCenter } from "@/components/admin/ControlCenter";
 import { FuelConfigPanel } from "@/components/FuelConfigPanel";
 import { PipelineBoard } from "@/components/PipelineBoard";
 import type { FuelAuditEntry } from "@/lib/fuelAdmin/store";
 import type { DeskAccount } from "@/components/AdminDesk";
-import { FUEL_PIPELINES, FUEL_STATUSES, type FuelApplication } from "@/lib/fuelJudge/types";
+import type { FuelApplication } from "@/lib/fuelJudge/types";
 
 type BoardPayload = {
   mode: "live" | "mock";
   writesEnabled: boolean;
   applications: FuelApplication[];
   audit: FuelAuditEntry[];
+  truncated?: boolean;
   syncing?: boolean;
 };
 
 const SECTIONS = [
-  { id: "overview", label: "Overview" },
+  { id: "overview", label: "Control Center" },
   { id: "pipeline", label: "Pipeline" },
   { id: "judges", label: "Judges" },
   { id: "desk", label: "Desk setup" },
@@ -124,7 +126,7 @@ function AdminConsoleInner({ accounts }: { accounts: DeskAccount[] }) {
               go({ section: item.id });
             }}
           >
-            {item.label}
+            <span>{item.label}</span>
             {item.id === "judges" && pending > 0 ? <span className="nav-badge">{pending}</span> : null}
           </a>
         ))}
@@ -137,7 +139,7 @@ function AdminConsoleInner({ accounts }: { accounts: DeskAccount[] }) {
         </header>
         {board?.syncing ? <p className="console-status">CRM syncing</p> : null}
         {section === "overview" ? (
-          <Overview
+          <ControlCenter
             accounts={accounts}
             board={board}
             loading={loading}
@@ -162,121 +164,6 @@ function AdminConsoleInner({ accounts }: { accounts: DeskAccount[] }) {
         {section === "desk" ? <FuelConfigPanel applications={board?.applications ?? []} /> : null}
         {section === "admins" ? <AdminAccounts accounts={accounts} view="admins" /> : null}
         {section === "activity" ? <Activity audit={board?.audit ?? []} loading={loading} loadError={loadError} onRetry={() => void load()} /> : null}
-      </div>
-    </div>
-  );
-}
-
-function Overview({
-  accounts,
-  board,
-  loading,
-  loadError,
-  onRetry,
-  onOpen,
-}: {
-  accounts: DeskAccount[];
-  board: BoardPayload | null;
-  loading: boolean;
-  loadError: string;
-  onRetry: () => void;
-  onOpen: (section: SectionId, filters?: { stage?: string; pipeline?: string }) => void;
-}) {
-  const pending = accounts.filter((account) => account.role === "judge" && account.status === "pending");
-  const judges = accounts.filter((account) => account.role === "judge" && account.status === "approved");
-  const stageCounts = useMemo(() => {
-    const applications = board?.applications ?? [];
-    return FUEL_STATUSES.map((stage) => ({
-      stage,
-      count: applications.filter((application) => application.stage === stage).length,
-    }));
-  }, [board]);
-  const pipelineCounts = useMemo(() => {
-    const applications = board?.applications ?? [];
-    return FUEL_PIPELINES.map((pipeline) => ({
-      pipeline,
-      count: applications.filter((application) => application.pipeline === pipeline).length,
-    }));
-  }, [board]);
-
-  if (loading && !board) return <p className="console-status">Loading the Fuel pipeline.</p>;
-  if (loadError && !board) {
-    return (
-      <div>
-        <p className="form-note" role="alert">{loadError}</p>
-        <button className="btn" type="button" onClick={onRetry}>Try again</button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="overview">
-      <p className="console-lead">
-        {board?.applications.length ?? 0} Fuel application{(board?.applications.length ?? 0) === 1 ? "" : "s"}.
-        {board?.mode === "mock"
-          ? " These are sample applications."
-          : board?.writesEnabled
-            ? " Confirmed field edits are written to Fuel CRM. Judge reviews are not."
-            : " Field edits stay on this desk until admin writes are turned on. Judge reviews are not written to Fuel CRM."}
-      </p>
-      <div className="overview-stats">
-        <button type="button" onClick={() => onOpen("pipeline")}>
-          <span>Applications</span>
-          <strong>{board?.applications.length ?? 0}</strong>
-        </button>
-        <button type="button" onClick={() => onOpen("judges")}>
-          <span>Waiting</span>
-          <strong>{pending.length}</strong>
-        </button>
-        <button type="button" onClick={() => onOpen("judges")}>
-          <span>Approved judges</span>
-          <strong>{judges.length}</strong>
-        </button>
-        <button type="button" onClick={() => onOpen("activity")}>
-          <span>Recorded edits</span>
-          <strong>{board?.audit.length ?? 0}</strong>
-        </button>
-      </div>
-      <div className="overview-split">
-        <section>
-          <h2>By stage</h2>
-          <ul>
-            {stageCounts.map((item) => (
-              <li key={item.stage}>
-                <button type="button" onClick={() => onOpen("pipeline", { stage: item.stage })}>
-                  <span>{item.stage}</span>
-                  <strong>{item.count}</strong>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h2>By pipeline</h2>
-          <ul>
-            {pipelineCounts.map((item) => (
-              <li key={item.pipeline}>
-                <button type="button" onClick={() => onOpen("pipeline", { pipeline: item.pipeline })}>
-                  <span>{item.pipeline}</span>
-                  <strong>{item.count}</strong>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <h2>Latest edits</h2>
-          {(board?.audit.length ?? 0) === 0 ? <p className="quiet">No field changes have been recorded.</p> : (
-            <ul className="overview-edits">
-              {board?.audit.slice(0, 4).map((entry) => (
-                <li key={entry.id}>
-                  <button type="button" onClick={() => onOpen("activity")}>
-                    <strong>{entry.projectName}</strong>
-                    <span>{entry.changes.map((change) => change.label).join(", ")}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
       </div>
     </div>
   );
