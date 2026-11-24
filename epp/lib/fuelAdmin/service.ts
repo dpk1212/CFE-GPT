@@ -118,6 +118,89 @@ export async function updateFuelApplication(
   };
 }
 
+export type StageMoveRow = {
+  id: string;
+  projectName: string;
+  from: string;
+  to: string;
+};
+
+export type StageMoveFailure = {
+  id: string;
+  projectName: string;
+  error: string;
+};
+
+/** Move Stage on each Fuel deal. One rejection does not undo the deals that already updated. */
+export async function updateFuelStages(
+  applicationIds: string[],
+  stage: string,
+  actor: { email: string },
+  options?: {
+    durable?: boolean;
+    source?: () => Promise<FuelApplication[]>;
+    writer?: FuelDealWriter;
+  },
+) {
+  const email = actor.email.trim().toLowerCase();
+  if (!email) throw new FuelJudgeError("Sign in as an admin.", 401);
+  const target = stage.trim();
+  if (!(FUEL_STATUSES as readonly string[]).includes(target)) {
+    throw new FuelJudgeError("Choose a Fuel stage.", 400);
+  }
+  const ids = [...new Set(applicationIds.map((id) => id.trim()).filter(Boolean))];
+  if (!ids.length) throw new FuelJudgeError("Choose at least one application.", 400);
+  if (!fuelAdminWritesEnabled()) throw new FuelJudgeError("Fuel admin writes are off.", 403);
+
+  const listed = await listFuelPipeline({ durable: options?.durable, source: options?.source });
+  const writer = options?.writer ?? { updateDeal: updateDealInZoho };
+  const updated: StageMoveRow[] = [];
+  const unchanged: { id: string; projectName: string; stage: string }[] = [];
+  const failed: StageMoveFailure[] = [];
+
+  for (const id of ids) {
+    const current = listed.applications.find((row) => row.id === id);
+    if (!current || !(FUEL_PIPELINES as readonly string[]).includes(current.pipeline)) {
+      failed.push({
+        id,
+        projectName: current?.projectName || id,
+        error: "That application is not in a Fuel pipeline.",
+      });
+      continue;
+    }
+    if (current.stage === target) {
+      unchanged.push({ id: current.id, projectName: current.projectName, stage: current.stage });
+      continue;
+    }
+    let written = false;
+    try {
+      await writer.updateDeal(current.id, { Stage: target });
+      written = true;
+      const entry: FuelAuditEntry = {
+        id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        at: new Date().toISOString(),
+        email,
+        applicationId: current.id,
+        projectName: current.projectName,
+        pipeline: current.pipeline,
+        wrote: true,
+        changes: [{ field: "Stage", label: "Stage", old: current.stage, new: target }],
+      };
+      await recordFuelAdminChange(entry, null, { durable: options?.durable });
+      updated.push({ id: current.id, projectName: current.projectName, from: current.stage, to: target });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "The stage was not updated.";
+      failed.push({
+        id: current.id,
+        projectName: current.projectName,
+        error: written ? `Stage was updated, but the audit log failed: ${message}` : message,
+      });
+    }
+  }
+
+  return { wrote: true, stage: target, updated, unchanged, failed };
+}
+
 function mergeOverlay(application: FuelApplication, overlay: EditableDeal | undefined) {
   if (!overlay || fuelCrmMode() === "live") return application;
   return applyEditable(application, overlay);

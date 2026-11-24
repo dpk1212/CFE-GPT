@@ -2724,3 +2724,63 @@ p { margin: 0; }
 .app-review-feedback {
   min-height: 280px;
 }
+
+.mass-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(0, 39, 76, 0.08);
+  border-radius: 12px;
+  background: var(--white);
+}
+.mass-stage label {
+  display: grid;
+  gap: 6px;
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.mass-stage select {
+  min-height: 44px;
+  min-width: 220px;
+  border: 1px solid rgba(0, 39, 76, 0.16);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--white);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.mass-stage .mass-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.mass-stage .quiet,
+.mass-stage .form-note { margin: 0; align-self: center; }
+.mass-stage.is-disabled { background: rgba(0, 39, 76, 0.03); }
+.mass-confirm-list { max-height: 320px; overflow: auto; margin: 12px 0; }
+.kanban-column header h3 { display: flex; align-items: center; gap: 8px; }
+.kanban-column li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+.kanban-pick,
+.mass-check input,
+.pipeline-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+}
+.kanban-pick { padding-top: 14px; }

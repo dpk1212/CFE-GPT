@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { listFuelPipeline, updateFuelApplication } from "@/lib/fuelAdmin/service";
+import { listFuelPipeline, updateFuelApplication, updateFuelStages } from "@/lib/fuelAdmin/service";
 import { FuelJudgeError } from "@/lib/fuelJudge/service";
 import { openSession, SESSION_COOKIE } from "@/lib/session";
 
@@ -28,9 +28,21 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: "Sign in as an admin." }, { status: 401 });
-  const body = (await request.json().catch(() => null)) as { applicationId?: string; fields?: unknown } | null;
-  if (!body?.applicationId) return NextResponse.json({ error: "Choose an application." }, { status: 400 });
+  const body = (await request.json().catch(() => null)) as {
+    applicationId?: string;
+    fields?: unknown;
+    applicationIds?: unknown;
+    stage?: unknown;
+  } | null;
   try {
+    if (body && Array.isArray(body.applicationIds)) {
+      const ids = body.applicationIds.filter((id): id is string => typeof id === "string");
+      if (ids.length !== body.applicationIds.length || typeof body.stage !== "string") {
+        return NextResponse.json({ error: "Choose applications and a Fuel stage." }, { status: 400 });
+      }
+      return NextResponse.json(await updateFuelStages(ids, body.stage, { email: session.email }));
+    }
+    if (!body?.applicationId) return NextResponse.json({ error: "Choose an application." }, { status: 400 });
     const result = await updateFuelApplication(body.applicationId, body.fields, { email: session.email });
     return NextResponse.json(result);
   } catch (err) {

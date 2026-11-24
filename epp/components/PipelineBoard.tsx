@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ApplicationReview } from "@/components/admin/ApplicationReview";
+import { MassStageMove } from "@/components/admin/MassStageMove";
 import { PIPELINE_VIEW_KEY, money, pipelineShort } from "@/components/admin/adminFormat";
 import { stageTone } from "@/components/admin/stageTone";
 import type { EditableDeal } from "@/lib/fuelAdmin/fields";
@@ -53,6 +54,7 @@ export function PipelineBoard({
   const [view, setView] = useState<ViewMode>("board");
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "projectName", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pickedIds, setPickedIds] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<Record<string, unknown> | null>(null);
@@ -115,7 +117,28 @@ export function PipelineBoard({
     return copy;
   }, [rows, sort]);
 
+  const visibleIds = rows.map((row) => row.id).join("\u0000");
+  useEffect(() => {
+    const visible = new Set(visibleIds ? visibleIds.split("\u0000") : []);
+    setPickedIds((current) => current.filter((id) => visible.has(id)));
+  }, [visibleIds]);
+
   const selected = board?.applications.find((row) => row.id === selectedId) ?? null;
+
+  function togglePicked(id: string) {
+    setPickedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  }
+
+  function setPicked(ids: string[], on: boolean) {
+    setPickedIds((current) => {
+      const next = new Set(current);
+      for (const id of ids) {
+        if (on) next.add(id);
+        else next.delete(id);
+      }
+      return [...next];
+    });
+  }
 
   function openApplication(application: FuelApplication) {
     setSelectedId(application.id);
@@ -153,6 +176,42 @@ export function PipelineBoard({
     setMessage(body.wrote ? `Saved ${body.application.projectName} in Fuel CRM.` : `Dry run for ${body.application.projectName}. Fuel CRM was not updated.`);
     await onReload();
     setSelectedId(body.application.id);
+  }
+
+  async function moveStages(stage: string, ids: string[]) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    const response = await fetch("/api/admin/fuel-pipeline", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ applicationIds: ids, stage }),
+    });
+    const body = (await response.json().catch(() => null)) as {
+      error?: string;
+      updated?: { id: string; projectName: string }[];
+      unchanged?: { id: string }[];
+      failed?: { id: string; projectName: string; error: string }[];
+    } | null;
+    setBusy(false);
+    if (!response.ok || !body || body.error) {
+      setError(body?.error ?? "The stages were not updated.");
+      return;
+    }
+    const failed = body.failed ?? [];
+    const updated = body.updated ?? [];
+    const unchanged = body.unchanged ?? [];
+    const parts = [`Updated ${updated.length}.`];
+    if (unchanged.length) parts.push(`${unchanged.length} already at ${stage}.`);
+    if (failed.length) {
+      parts.push(
+        `Failed: ${failed.map((row) => `${row.projectName} (${row.error})`).join("; ")}.`,
+      );
+    }
+    if (failed.length) setError(parts.join(" "));
+    else setMessage(parts.join(" "));
+    setPickedIds(failed.map((row) => row.id));
+    await onReload();
   }
 
   function toggleSort(key: SortKey) {
@@ -218,6 +277,15 @@ export function PipelineBoard({
             </label>
           </div>
 
+          <MassStageMove
+            rows={rows}
+            selectedIds={pickedIds}
+            writesEnabled={board.writesEnabled}
+            busy={busy}
+            onChangeSelection={setPickedIds}
+            onApply={moveStages}
+          />
+
           {board.applications.length === 0 ? <p className="desk-empty">No Fuel applications are on this desk.</p> : null}
           {board.applications.length > 0 && rows.length === 0 ? <p className="desk-empty">No applications match those filters.</p> : null}
 
@@ -229,6 +297,15 @@ export function PipelineBoard({
                     <header>
                       <div>
                         <h3>
+                          <label className="mass-check">
+                            <input
+                              type="checkbox"
+                              aria-label={`Select all in ${column.stage}`}
+                              checked={column.rows.every((row) => pickedIds.includes(row.id))}
+                              disabled={!board.writesEnabled || busy}
+                              onChange={(event) => setPicked(column.rows.map((row) => row.id), event.target.checked)}
+                            />
+                          </label>
                           <span className={`stage-chip tone-${stageTone(column.stage)}`} data-stage={stageSlug(column.stage)}>
                             {column.stage}
                           </span>
@@ -245,6 +322,15 @@ export function PipelineBoard({
                         const feedback = feedbackBadge(application, 0);
                         return (
                           <li key={application.id}>
+                            <label className="kanban-pick">
+                              <input
+                                type="checkbox"
+                                aria-label={`Select ${application.projectName}`}
+                                checked={pickedIds.includes(application.id)}
+                                disabled={!board.writesEnabled || busy}
+                                onChange={() => togglePicked(application.id)}
+                              />
+                            </label>
                             <button
                               type="button"
                               className={`kanban-card${application.id === selectedId ? " is-selected" : ""}`}
@@ -277,6 +363,15 @@ export function PipelineBoard({
                 <thead>
                   <tr>
                     <th scope="col">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all shown applications"
+                        checked={sortedRows.length > 0 && sortedRows.every((row) => pickedIds.includes(row.id))}
+                        disabled={!board.writesEnabled || busy || sortedRows.length === 0}
+                        onChange={(event) => setPicked(sortedRows.map((row) => row.id), event.target.checked)}
+                      />
+                    </th>
+                    <th scope="col">
                       <button type="button" onClick={() => toggleSort("projectName")}>Project</button>
                     </th>
                     <th scope="col">
@@ -302,6 +397,15 @@ export function PipelineBoard({
                     const feedback = feedbackBadge(application, 0);
                     return (
                       <tr key={application.id} className={application.id === selectedId ? "is-selected" : undefined}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${application.projectName}`}
+                            checked={pickedIds.includes(application.id)}
+                            disabled={!board.writesEnabled || busy}
+                            onChange={() => togglePicked(application.id)}
+                          />
+                        </td>
                         <th scope="row">
                           <button type="button" className="desk-name" onClick={() => openApplication(application)}>
                             {application.projectName}
