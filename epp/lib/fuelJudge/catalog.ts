@@ -136,7 +136,7 @@ export const SAMPLE_APPLICATIONS: FuelApplication[] = [
   {
     id: "sample-ledger",
     projectName: "Ledger Leaf",
-    stage: "Needs Completeness Check",
+    stage: "Out For Initial Review",
     pipeline: "Fuel Consumer IT",
     totalReviews: 0,
     summary: "A receipt scanner that teaches student founders what their burn actually is.",
@@ -201,7 +201,7 @@ export const SAMPLE_APPLICATIONS: FuelApplication[] = [
   {
     id: "sample-amber",
     projectName: "Amber Path",
-    stage: "Needs Completeness Check",
+    stage: "No Funding",
     pipeline: "Fuel Jumpstart",
     totalReviews: 0,
     summary: "A walking tour app for first-year students that ends at office hours.",
