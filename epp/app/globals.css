@@ -2817,126 +2817,123 @@ p { margin: 0; }
     var(--white);
   box-shadow: 0 8px 24px rgba(0, 39, 76, 0.04);
 }
+.judge-app-header {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid rgba(0, 39, 76, 0.08);
+}
 .judge-materials-head {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px 16px;
-  margin-bottom: 12px;
+  gap: 10px 16px;
+  margin: 0;
 }
 .judge-title-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 .judge-workbench-desk .judge-title {
   margin: 0;
-  font-size: clamp(22px, 2.4vw, 30px);
+  font-size: clamp(20px, 2.2vw, 28px);
+  letter-spacing: 0.01em;
 }
 .judge-title-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
-.judge-summary-line {
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  border-left: 3px solid var(--maize);
-  background: rgba(0, 39, 76, 0.03);
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.5;
-}
-.judge-app-spotlight {
+.judge-kpi-strip {
   display: grid;
-  gap: 14px;
-  margin: 0 0 20px;
-  padding: 16px 18px;
+  grid-template-columns: minmax(0, 1.15fr) 1px minmax(0, 1fr);
+  gap: 0 14px;
+  align-items: stretch;
+  min-height: 64px;
+  padding: 10px 14px;
   border: 1px solid rgba(0, 39, 76, 0.08);
-  border-radius: 14px;
+  border-radius: 12px;
   background:
-    linear-gradient(135deg, rgba(255, 203, 5, 0.1), transparent 42%),
+    linear-gradient(135deg, rgba(255, 203, 5, 0.1), transparent 48%),
     rgba(0, 39, 76, 0.02);
 }
-.judge-funding-hero {
+.judge-kpi-funding,
+.judge-kpi-reviews {
   display: grid;
   gap: 4px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid var(--maize);
+  align-content: center;
 }
-.judge-funding-label {
+.judge-kpi-label {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.judge-funding-figure {
-  color: var(--blue);
-  font-size: clamp(32px, 4vw, 44px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  text-transform: none;
-}
-.judge-round-reviews {
-  display: grid;
-  gap: 6px;
-}
-.judge-round-label {
-  color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.judge-round-body {
+.judge-kpi-figure {
+  color: var(--blue);
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  text-transform: none;
+  border-left: 3px solid var(--maize);
+  padding-left: 10px;
+}
+.judge-kpi-divider {
+  width: 1px;
+  background: rgba(0, 39, 76, 0.12);
+  align-self: stretch;
+}
+.judge-kpi-reviews-body {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px 10px;
 }
-.judge-round-body strong {
+.judge-kpi-reviews-body > strong {
   color: var(--blue);
-  font-size: 28px;
+  font-size: clamp(22px, 2.4vw, 28px);
   letter-spacing: 0;
   text-transform: none;
-  line-height: 1;
+  line-height: 1.05;
 }
-.judge-round-body > span {
+.judge-kpi-reviews-meta {
+  display: grid;
+  gap: 4px;
+}
+.judge-kpi-reviews-meta > span {
   color: var(--text);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
 }
 .judge-round-dots {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 3px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .judge-round-dots li {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 999px;
   background: var(--blue);
-  opacity: 0.55;
+  opacity: 0.5;
 }
-.judge-fact-industries {
-  display: grid;
-  gap: 8px;
+.judge-industries-row {
+  min-height: 0;
 }
-.judge-fact-industries > span {
+.judge-industries-empty {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 12px;
 }
 .industry-chip-list {
   margin: 0;
@@ -2947,13 +2944,33 @@ p { margin: 0; }
   gap: 6px;
 }
 .industry-chip-list li {
-  padding: 5px 10px;
+  padding: 4px 9px;
   border-radius: 999px;
   background: rgba(1, 59, 113, 0.08);
   color: var(--dark-blue);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.3;
+}
+.judge-summary-line {
+  margin: 0;
+  padding: 8px 0 8px 12px;
+  border-left: 3px solid var(--maize);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+@media (max-width: 720px) {
+  .judge-kpi-strip {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .judge-kpi-divider {
+    width: 100%;
+    height: 1px;
+  }
 }
 
 .judge-docs-workbench h3 {

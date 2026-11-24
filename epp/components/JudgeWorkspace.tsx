@@ -648,73 +648,73 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
       ) : (
         <div className="judge-workbench">
           <section className="judge-materials" aria-label="Application materials">
-            <div className="judge-materials-head">
-              <div>
-                <p className="cc-eyebrow">
-                  Application {selectedIndex >= 0 ? selectedIndex + 1 : "—"} of {rows.length}
-                </p>
-                <div className="judge-title-row">
-                  <h2 className="judge-title">{selected.projectName}</h2>
-                  <span className={`review-status status-${status}`}>
-                    {status === "submitted" ? "Submitted" : status === "draft" ? "Draft" : "Open"}
-                  </span>
+            <header className="judge-app-header">
+              <div className="judge-materials-head">
+                <div>
+                  <p className="cc-eyebrow">
+                    Application {selectedIndex >= 0 ? selectedIndex + 1 : "—"} of {rows.length}
+                  </p>
+                  <div className="judge-title-row">
+                    <h2 className="judge-title">{selected.projectName}</h2>
+                    <span className={`review-status status-${status}`}>
+                      {status === "submitted" ? "Submitted" : status === "draft" ? "Draft" : "Open"}
+                    </span>
+                  </div>
+                  <div className="judge-title-meta">
+                    <span className="stage-chip tone-active">{selected.stage}</span>
+                    <span className={pipelineChipClass(selected.pipeline)}>{pipelineLabel(selected.pipeline)}</span>
+                  </div>
                 </div>
-                <div className="judge-title-meta">
-                  <span className="stage-chip tone-active">{selected.stage}</span>
-                  <span className={pipelineChipClass(selected.pipeline)}>{pipelineLabel(selected.pipeline)}</span>
+                <div className="read-move">
+                  <button className="btn-on-light" type="button" onClick={() => move(-1)} disabled={selectedIndex <= 0}>
+                    Previous
+                  </button>
+                  <button
+                    className="btn-on-light"
+                    type="button"
+                    onClick={() => move(1)}
+                    disabled={selectedIndex < 0 || selectedIndex >= rows.length - 1}
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
-              <div className="read-move">
-                <button className="btn-on-light" type="button" onClick={() => move(-1)} disabled={selectedIndex <= 0}>
-                  Previous
-                </button>
-                <button
-                  className="btn-on-light"
-                  type="button"
-                  onClick={() => move(1)}
-                  disabled={selectedIndex < 0 || selectedIndex >= rows.length - 1}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
 
-            <p className="judge-summary-line">
-              {selected.summary || "No one-sentence summary is on this application."}
-            </p>
-
-            <div className="judge-app-spotlight" aria-label="Key facts">
-              {columns.has("fundingRequested") ? (
-                <div className="judge-funding-hero">
-                  <span className="judge-funding-label">Funding requested</span>
-                  <strong className="judge-funding-figure">{money(selected.fundingRequested)}</strong>
-                </div>
-              ) : null}
-
-              <div className="judge-round-reviews" aria-live="polite">
-                <span className="judge-round-label">Judge reviews this round</span>
-                <div className="judge-round-body">
-                  <strong>{feedback.loading ? "…" : reviewsThisRound}</strong>
-                  <span>
-                    {feedback.loading
-                      ? "loading"
-                      : reviewsThisRound === 1
-                        ? "judge reviewed"
-                        : "judges reviewed"}
-                  </span>
-                  {!feedback.loading && reviewsThisRound > 0 ? (
-                    <ul className="judge-round-dots" aria-hidden="true">
-                      {Array.from({ length: Math.min(reviewsThisRound, 12) }).map((_, index) => (
-                        <li key={index} />
-                      ))}
-                    </ul>
-                  ) : null}
+              <div className="judge-kpi-strip" aria-label="Key numbers">
+                {columns.has("fundingRequested") ? (
+                  <div className="judge-kpi-funding">
+                    <span className="judge-kpi-label">Funding requested</span>
+                    <strong className="judge-kpi-figure">{money(selected.fundingRequested)}</strong>
+                  </div>
+                ) : null}
+                <div className="judge-kpi-divider" aria-hidden="true" />
+                <div className="judge-kpi-reviews" aria-live="polite">
+                  <span className="judge-kpi-label">Judge reviews this round</span>
+                  <div className="judge-kpi-reviews-body">
+                    <strong>{feedback.loading ? "…" : reviewsThisRound}</strong>
+                    <div className="judge-kpi-reviews-meta">
+                      <span>
+                        {feedback.loading
+                          ? "loading"
+                          : reviewsThisRound === 1
+                            ? "judge reviewed"
+                            : "judges reviewed"}
+                      </span>
+                      {!feedback.loading && reviewsThisRound > 0 ? (
+                        <ul className="judge-round-dots" aria-hidden="true">
+                          {Array.from({ length: Math.min(reviewsThisRound, 12) }).map((_, index) => (
+                            <li key={index} />
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {columns.has("industries") ? (
-                <div className="judge-fact-industries">
-                  <span>Industries</span>
+                <div className="judge-industries-row">
+                  <span className="sr-only">Industries</span>
                   {industries.length ? (
                     <ul className="industry-chip-list">
                       {industries.map((chip) => (
@@ -722,11 +722,15 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
                       ))}
                     </ul>
                   ) : (
-                    <strong>—</strong>
+                    <span className="judge-industries-empty">No industries listed</span>
                   )}
                 </div>
               ) : null}
-            </div>
+
+              <p className="judge-summary-line">
+                {selected.summary || "No one-sentence summary is on this application."}
+              </p>
+            </header>
 
             {materials.length ? (
               <section className="judge-docs judge-docs-workbench">
