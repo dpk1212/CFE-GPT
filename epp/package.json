@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --experimental-strip-types --test lib/accounts.test.ts lib/session.test.ts"
+    "test": "node --experimental-strip-types --test lib/accounts.test.ts lib/session.test.ts && npx --yes tsx --test lib/fuelJudge/fuelJudge.test.ts"
   },
   "dependencies": {
     "@vercel/blob": "^2.0.0",

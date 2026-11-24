@@ -11,8 +11,8 @@ export function Header({ session }: { session: Session | null }) {
         </Link>
         <nav className="site-nav" aria-label="Primary">
           <a href="/#programs">Programs</a>
-          {session?.role === "admin" ? <Link href="/admin">Approvals</Link> : null}
-          {session?.role === "judge" ? <Link href="/judge">Home</Link> : null}
+          {session?.role === "admin" ? <Link href="/admin">Admin</Link> : null}
+          {session?.role === "judge" ? <Link href="/judge">Fuel desk</Link> : null}
           {session ? <SignOut /> : <Link className="btn header-login" href="/login">Log in</Link>}
         </nav>
       </div>
