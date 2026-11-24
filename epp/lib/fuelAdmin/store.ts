@@ -14,6 +14,8 @@ export type FuelAuditEntry = {
   projectName: string;
   pipeline: string;
   wrote: boolean;
+  /** Roster entries are judge access changes, not Fuel CRM writes. */
+  scope?: "roster";
   changes: { field: string; label: string; old: string; new: string }[];
 };
 

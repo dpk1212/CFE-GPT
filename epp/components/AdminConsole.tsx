@@ -7,6 +7,7 @@ import { AdminAccounts } from "@/components/AdminDesk";
 import { ControlCenter } from "@/components/admin/ControlCenter";
 import { FuelConfigPanel } from "@/components/FuelConfigPanel";
 import { PipelineBoard } from "@/components/PipelineBoard";
+import { auditResult } from "@/components/admin/adminFormat";
 import type { FuelAuditEntry } from "@/lib/fuelAdmin/store";
 import type { DeskAccount } from "@/components/AdminDesk";
 import type { FuelApplication } from "@/lib/fuelJudge/types";
@@ -214,7 +215,7 @@ function Activity({
                   <span key={`${entry.id}-${change.field}`} className="audit-change">{change.label}: {change.old || "—"} → {change.new || "—"}</span>
                 ))}
               </td>
-              <td>{entry.wrote ? "Written to Fuel CRM" : "Dry run"}</td>
+              <td>{auditResult(entry)}</td>
             </tr>
           ))}
         </tbody>

@@ -21,6 +21,12 @@ export function shown(value: string | number | null | undefined) {
   return String(value);
 }
 
+export function auditResult(entry: { wrote: boolean; scope?: string }, style: "short" | "full" = "full") {
+  if (entry.scope === "roster") return "Saved";
+  if (entry.wrote) return style === "short" ? "Written" : "Written to Fuel CRM";
+  return "Dry run";
+}
+
 export function whenEt(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",

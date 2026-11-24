@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { admitGoogleIdentity, bootstrapAdmin, createAdmin, DALE_GOOGLE_ADMIN_EMAIL, loginResult, requestJudge, reviewRequest, type Account } from "./accounts.ts";
+import { addApprovedJudge, admitGoogleIdentity, bootstrapAdmin, createAdmin, DALE_GOOGLE_ADMIN_EMAIL, loginResult, removeJudge, requestJudge, reviewRequest, type Account } from "./accounts.ts";
 
 const now = "2026-11-24T13:00:00.000Z";
 
@@ -57,6 +57,44 @@ test("Dale's Google account is an admin even if a pending judge row exists", () 
     assert.equal(admitted.account.email, DALE_GOOGLE_ADMIN_EMAIL);
   }
   assert.equal(admitted.accounts.filter((account) => account.email === DALE_GOOGLE_ADMIN_EMAIL).length, 1);
+});
+
+test("an admin can pre-approve a judge email and that sign-in skips the request", () => {
+  const added = addApprovedJudge([], { email: "Avery@Example.edu" }, now);
+  assert.equal(added.error, undefined);
+  if ("error" in added && added.error) return;
+  assert.equal(added.account.email, "avery@example.edu");
+  assert.equal(added.account.status, "approved");
+  assert.equal(added.account.role, "judge");
+  assert.equal(added.account.name.length >= 2, true);
+  const signedIn = admitGoogleIdentity(added.accounts, { name: "Avery Judge", email: "avery@example.edu", passwordHash: "clerk" }, now);
+  assert.equal(signedIn.outcome, "approved");
+  if (signedIn.outcome === "approved") assert.equal(signedIn.account.role, "judge");
+  assert.equal(signedIn.accounts.filter((account) => account.status === "pending").length, 0);
+  const duplicate = addApprovedJudge(added.accounts, { email: "avery@example.edu" }, now);
+  assert.match(duplicate.error ?? "", /already approved/);
+  const admin = addApprovedJudge(bootstrapAdmin([], "hash", now), { email: "Kolnitd@umich.edu" }, now);
+  assert.match(admin.error ?? "", /admin/);
+});
+
+test("pre-approving a waiting request keeps the existing approval path working", () => {
+  const requested = requestJudge([], { name: "Avery Judge", email: "avery@example.com", passwordHash: "chosen" }, now);
+  const promoted = addApprovedJudge(requested.accounts, { email: "AVERY@example.com" }, now);
+  assert.equal(promoted.error, undefined);
+  if ("account" in promoted) {
+    assert.equal(promoted.account.status, "approved");
+    assert.equal(promoted.account.passwordHash, "chosen");
+    assert.equal(promoted.account.name, "Avery Judge");
+  }
+  const stillWaiting = requestJudge([], { name: "Blair Judge", email: "blair@example.com", passwordHash: "hash" }, now);
+  const approved = reviewRequest(stillWaiting.accounts, "blair@example.com", "approve", now);
+  assert.equal(approved.accounts[0]?.status, "approved");
+  const removed = removeJudge(promoted.accounts, "avery@example.com");
+  assert.equal(removed.error, undefined);
+  const afterSignIn = admitGoogleIdentity(removed.accounts, { name: "Avery Judge", email: "avery@example.com", passwordHash: "clerk" }, now);
+  assert.equal(afterSignIn.outcome, "pending");
+  const keptAdmin = removeJudge(bootstrapAdmin([], "hash", now), "kolnitd@umich.edu");
+  assert.match(keptAdmin.error ?? "", /not on the list/);
 });
 
 test("only a new email can become an admin", () => {

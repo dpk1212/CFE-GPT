@@ -27,7 +27,7 @@ import {
 } from "@/lib/fuelAdmin/metrics";
 import type { FuelDeskReview } from "@/lib/fuelAdmin/reviews";
 import type { FuelApplication } from "@/lib/fuelJudge/types";
-import { moneyCompact, whenEt } from "./adminFormat";
+import { auditResult, moneyCompact, whenEt } from "./adminFormat";
 import { stageTone } from "./stageTone";
 
 type BoardPayload = {
@@ -363,7 +363,7 @@ export function ControlCenter({
                   <button type="button" onClick={() => onOpen("activity")}>
                     <strong>{entry.projectName}</strong>
                     <span>{entry.changes.map((change) => change.label).join(", ")}</span>
-                    <em>{whenEt(entry.at)} ET · {entry.wrote ? "Written" : "Dry run"}</em>
+                    <em>{whenEt(entry.at)} ET · {auditResult(entry, "short")}</em>
                   </button>
                 </li>
               ))}

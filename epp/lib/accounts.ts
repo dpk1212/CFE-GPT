@@ -71,6 +71,57 @@ export function reviewRequest(accounts: Account[], email: string, action: "appro
   };
 }
 
+function validEmail(email: string) {
+  return email.includes("@") && !email.startsWith("@") && !email.endsWith("@") && !email.includes(" ");
+}
+
+function judgeDisplayName(email: string, name: string | undefined, existing?: Account) {
+  const cleaned = (name ?? "").trim().replace(/\s+/g, " ");
+  if (cleaned.length >= 2) return cleaned;
+  if (existing && existing.name.trim().length >= 2) return existing.name;
+  const local = email.split("@")[0]?.replace(/[._+-]+/g, " ").trim() ?? "";
+  const titled = local.replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return titled.length >= 2 ? titled : "Judge";
+}
+
+/** An admin adds a judge who is approved immediately. No request email is sent. */
+export function addApprovedJudge(
+  accounts: Account[],
+  input: { name?: string; email: string; passwordHash: string },
+  now: string,
+) {
+  const email = normalizeEmail(input.email);
+  if (!validEmail(email)) return { accounts, error: "Enter a valid email." };
+  if (email === BOOTSTRAP_ADMIN_EMAIL || email === DALE_GOOGLE_ADMIN_EMAIL) {
+    return { accounts, error: "That email is an admin." };
+  }
+  const existing = accounts.find((account) => account.email === email);
+  if (existing?.role === "admin") return { accounts, error: "That email is an admin." };
+  if (existing?.role === "judge" && existing.status === "approved") {
+    return { accounts, error: "This judge is already approved." };
+  }
+  const account: Account = {
+    name: judgeDisplayName(email, input.name, existing),
+    email,
+    passwordHash: existing?.passwordHash || input.passwordHash,
+    role: "judge",
+    status: "approved",
+    createdAt: existing?.createdAt || now,
+    reviewedAt: now,
+  };
+  const next = existing
+    ? accounts.map((item) => (item.email === email ? account : item))
+    : [...accounts, account];
+  return { accounts: next, account };
+}
+
+export function removeJudge(accounts: Account[], email: string) {
+  const target = normalizeEmail(email);
+  const existing = accounts.find((account) => account.email === target);
+  if (!existing || existing.role !== "judge") return { accounts, error: "That judge is not on the list." };
+  return { accounts: accounts.filter((account) => account.email !== target), removed: existing };
+}
+
 export function createAdmin(accounts: Account[], input: { name: string; email: string; passwordHash: string }, now: string) {
   const name = input.name.trim().replace(/\s+/g, " ");
   const email = normalizeEmail(input.email);

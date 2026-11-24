@@ -4,7 +4,7 @@ import { SAMPLE_APPLICATIONS } from "../fuelJudge/catalog";
 import { fuelWritesEnabled } from "../fuelJudge/service";
 import { readEditable } from "./fields";
 import { fuelAdminWritesEnabled, listFuelPipeline, updateFuelApplication, updateFuelStageOrder, updateFuelStages } from "./service";
-import { resetFuelAdminState } from "./store";
+import { recordFuelAdminChange, resetFuelAdminState } from "./store";
 
 test.beforeEach(() => {
   resetFuelAdminState();
@@ -252,6 +252,34 @@ test("a mass stage move refuses a stage the Fuel desk does not use", async () =>
     /Fuel stage/,
   );
   assert.equal(writes, 0);
+});
+
+test("a judge roster change is stored in the audit log and does not write a deal", async () => {
+  await recordFuelAdminChange(
+    {
+      id: "audit-roster",
+      at: "2026-11-24T18:00:00.000Z",
+      email: "admin@example.edu",
+      applicationId: "",
+      projectName: "Judge access",
+      pipeline: "",
+      wrote: false,
+      scope: "roster",
+      changes: [{ field: "judge", label: "Added judge", old: "", new: "avery@example.edu" }],
+    },
+    null,
+    { durable: false },
+  );
+  const listed = await listFuelPipeline({
+    durable: false,
+    async source() {
+      return SAMPLE_APPLICATIONS;
+    },
+  });
+  const entry = listed.audit.find((row) => row.id === "audit-roster");
+  assert.equal(entry?.scope, "roster");
+  assert.equal(entry?.wrote, false);
+  assert.equal(entry?.changes[0]?.new, "avery@example.edu");
 });
 
 test("an unknown stage is refused", async () => {

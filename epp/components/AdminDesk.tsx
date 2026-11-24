@@ -48,6 +48,46 @@ export function AdminAccounts({ accounts, view }: { accounts: DeskAccount[]; vie
     router.refresh();
   }
 
+  async function addJudge(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setBusy("add-judge");
+    setMessage("");
+    const response = await fetch("/api/admin/judges", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: data.get("email"), name: data.get("name") }),
+    });
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    setBusy("");
+    if (!response.ok) {
+      setMessage(body?.error ?? "The judge was not added.");
+      return;
+    }
+    form.reset();
+    setMessage("Judge added. They can sign in with that email.");
+    router.refresh();
+  }
+
+  async function removeJudgeAccount(email: string) {
+    setBusy(email);
+    setMessage("");
+    const response = await fetch("/api/admin/judges", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, action: "remove" }),
+    });
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    setBusy("");
+    if (!response.ok) {
+      setMessage(body?.error ?? "That judge was not removed.");
+      return;
+    }
+    setMessage("Judge removed. They will need approval before they can sign in again.");
+    router.refresh();
+  }
+
   async function createAdminAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -105,6 +145,21 @@ export function AdminAccounts({ accounts, view }: { accounts: DeskAccount[]; vie
           )}
         </section>
         <section>
+          <h2>Add a judge</h2>
+          <p className="quiet">An added email is approved immediately. When that person signs in with it, they open the judge desk without requesting access.</p>
+          <form className="stack-form" onSubmit={addJudge}>
+            <label>
+              Email
+              <input name="email" type="email" required autoComplete="off" />
+            </label>
+            <label>
+              Name (optional)
+              <input name="name" autoComplete="off" />
+            </label>
+            <button className="btn-solid" type="submit" disabled={busy === "add-judge"}>{busy === "add-judge" ? "Saving" : "Add judge"}</button>
+          </form>
+        </section>
+        <section>
           <h2>Approved judges <span className="count-badge">{judges.length}</span></h2>
           {judges.length === 0 ? <p className="quiet">No judges are approved yet.</p> : (
             <div className="console-table-wrap">
@@ -114,6 +169,7 @@ export function AdminAccounts({ accounts, view }: { accounts: DeskAccount[]; vie
                     <th scope="col">Name</th>
                     <th scope="col">Email</th>
                     <th scope="col">Since</th>
+                    <th scope="col">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -122,6 +178,9 @@ export function AdminAccounts({ accounts, view }: { accounts: DeskAccount[]; vie
                       <th scope="row">{account.name}</th>
                       <td>{account.email}</td>
                       <td>{when(account.reviewedAt || account.createdAt)} ET</td>
+                      <td className="row-actions">
+                        <button className="btn-line" type="button" disabled={busy === account.email} onClick={() => removeJudgeAccount(account.email)}>Remove</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
