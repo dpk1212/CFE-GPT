@@ -6,9 +6,11 @@ import { RUBRIC_URL, type FeedbackDocument, type FeedbackRound } from "@/lib/fue
 export function FeedbackDocView({
   applicationId,
   compact = false,
+  workbench = false,
 }: {
   applicationId: string;
   compact?: boolean;
+  workbench?: boolean;
 }) {
   const [doc, setDoc] = useState<FeedbackDocument | null>(null);
   const [error, setError] = useState("");
@@ -50,28 +52,45 @@ export function FeedbackDocView({
   const pdfHref = `/api/feedback/${encodeURIComponent(applicationId)}/pdf`;
 
   return (
-    <div className={`feedback-doc${compact ? " is-compact" : ""}`}>
-      <header className="feedback-doc-cover">
-        <p className="cc-eyebrow">Center for Entrepreneurship · Fuel</p>
-        <h3>Judge&apos;s Feedback</h3>
-        <p className="feedback-doc-project">{doc.projectName}</p>
-        {doc.summary ? <p className="feedback-doc-summary">{doc.summary}</p> : null}
-        <div className="feedback-doc-meta">
-          <span>{doc.reviewCount} review{doc.reviewCount === 1 ? "" : "s"}</span>
-          {doc.omittedConflict ? <span>{doc.omittedConflict} conflict omitted</span> : null}
-          {doc.rounds.map((round) => (
-            <span key={round.id}>{round.label}: {round.reviewCount}</span>
-          ))}
-        </div>
-        <div className="feedback-doc-actions">
-          <a className="btn" href={pdfHref}>Download PDF</a>
-          <a className="btn-line" href={RUBRIC_URL} target="_blank" rel="noreferrer">
-            Rubric
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
-        </div>
-        {doc.warning ? <p className="quiet">{doc.warning}</p> : null}
-      </header>
+    <div className={`feedback-doc${compact ? " is-compact" : ""}${workbench ? " is-workbench" : ""}`}>
+      {workbench ? (
+        <header className="feedback-doc-workbench-meta">
+          <p>
+            <strong>{doc.reviewCount}</strong> anonymized review{doc.reviewCount === 1 ? "" : "s"}
+            {doc.omittedConflict ? ` · ${doc.omittedConflict} conflict omitted` : ""}
+          </p>
+          <div className="feedback-doc-actions">
+            <a className="btn-line" href={pdfHref}>PDF</a>
+            <a className="btn-line" href={RUBRIC_URL} target="_blank" rel="noreferrer">
+              Rubric
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </div>
+          {doc.warning ? <p className="quiet">{doc.warning}</p> : null}
+        </header>
+      ) : (
+        <header className="feedback-doc-cover">
+          <p className="cc-eyebrow">Center for Entrepreneurship · Fuel</p>
+          <h3>Judge&apos;s Feedback</h3>
+          <p className="feedback-doc-project">{doc.projectName}</p>
+          {doc.summary ? <p className="feedback-doc-summary">{doc.summary}</p> : null}
+          <div className="feedback-doc-meta">
+            <span>{doc.reviewCount} review{doc.reviewCount === 1 ? "" : "s"}</span>
+            {doc.omittedConflict ? <span>{doc.omittedConflict} conflict omitted</span> : null}
+            {doc.rounds.map((round) => (
+              <span key={round.id}>{round.label}: {round.reviewCount}</span>
+            ))}
+          </div>
+          <div className="feedback-doc-actions">
+            <a className="btn" href={pdfHref}>Download PDF</a>
+            <a className="btn-line" href={RUBRIC_URL} target="_blank" rel="noreferrer">
+              Rubric
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          </div>
+          {doc.warning ? <p className="quiet">{doc.warning}</p> : null}
+        </header>
+      )}
 
       {doc.rounds.length > 1 ? (
         <div className="feedback-doc-tabs" role="tablist" aria-label="Feedback rounds">
