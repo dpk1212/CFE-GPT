@@ -1,6 +1,7 @@
 import { SAMPLE_APPLICATIONS } from "@/lib/fuelJudge/catalog";
 import { dealToApplication, FUEL_DEAL_FIELDS } from "@/lib/fuelJudge/mapping";
 import { FuelJudgeError, fuelCrmMode } from "@/lib/fuelJudge/service";
+import { crmWriteEnvelope, crmWriteRequest } from "@/lib/zohoWrite";
 import { postCoqlAll } from "@/lib/zohoCoql";
 import { getZohoAccessToken, readZohoCatalog, rememberZohoCatalog, ZohoRateLimitError, ZohoTokenError } from "@/lib/zohoToken";
 import { FUEL_PIPELINES, FUEL_STATUSES, type FuelApplication } from "@/lib/fuelJudge/types";
@@ -113,6 +114,7 @@ export async function updateFuelApplication(
     application: applyEditable(current, parsed.value),
     changes: entry.changes,
     record,
+    request: wrote ? undefined : crmWriteRequest("PUT", "/crm/v8/Deals", { id: current.id, ...record }),
   };
 }
 
@@ -167,7 +169,7 @@ async function updateDealInZoho(id: string, fields: Record<string, string | numb
       Authorization: `Zoho-oauthtoken ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ data: [data], trigger: [] }),
+    body: JSON.stringify(crmWriteEnvelope(data)),
   });
   const payload = (await response.json().catch(() => null)) as {
     data?: { details?: { id?: string }; status?: string; message?: string }[];

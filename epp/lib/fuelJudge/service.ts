@@ -1,3 +1,4 @@
+import { crmWriteEnvelope, crmWriteRequest } from "@/lib/zohoWrite";
 import { postCoqlAll } from "@/lib/zohoCoql";
 import { getZohoAccessToken, readZohoCatalog, rememberZohoCatalog, ZohoRateLimitError, ZohoTokenError } from "@/lib/zohoToken";
 import { SAMPLE_APPLICATIONS, applicationsForStage } from "./catalog";
@@ -94,13 +95,14 @@ export async function submitFuelReview(
     throw new FuelJudgeError("This review form does not match the active stage.", 400);
   }
   const record = buildCrmRecord(input, application, reviewer);
+  const request = crmWriteRequest("POST", "/crm/v8/Application_Review", record);
   if (!fuelWritesEnabled()) {
     const id =
       options?.durable === false ? rememberSubmission(record) : await persistSubmission(record);
-    return { id, wrote: false as const, record };
+    return { id, wrote: false as const, record, request };
   }
   const created = await client.createReview(record);
-  return { id: created.id, wrote: true as const, record };
+  return { id: created.id, wrote: true as const, record, request };
 }
 
 export async function updateFuelConfig(next: FuelJudgeConfig, options?: { durable?: boolean }) {
@@ -205,7 +207,7 @@ async function createInConfiguredSource(record: Record<string, unknown>) {
       Authorization: `Zoho-oauthtoken ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ data: [record], trigger: [] }),
+    body: JSON.stringify(crmWriteEnvelope(record)),
   });
   const payload = (await response.json()) as {
     data?: { details?: { id?: string }; status?: string; message?: string }[];

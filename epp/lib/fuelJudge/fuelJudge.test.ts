@@ -59,6 +59,12 @@ test("a written review maps onto the same Application Review fields the form use
   );
   assert.equal(created.record.Final_Feedback_or_Outstanding_Questions_for_Team, "Clear buyer.");
   assert.equal(created.record.Internal_Notes, "Staff only.");
+  assert.equal("Reviewer" in created.record, false);
+  assert.equal("Owner" in created.record, false);
+  assert.equal(created.request.method, "POST");
+  assert.equal(created.request.path, "/crm/v8/Application_Review");
+  assert.deepEqual(created.request.body.trigger, ["workflow", "blueprint", "approval"]);
+  assert.equal(created.request.body.data[0], created.record);
   assert.equal(fuelWritesEnabled(), false);
 });
 

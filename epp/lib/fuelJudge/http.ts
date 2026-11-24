@@ -34,6 +34,7 @@ export async function handleFuelJudge(input: {
           reviewType: created.record.Review_Type,
           // When CRM writes are off, return the Application_Review payload for staff review.
           record: created.wrote ? undefined : created.record,
+          request: created.wrote ? undefined : created.request,
         },
       };
     }

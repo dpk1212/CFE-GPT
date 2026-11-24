@@ -136,14 +136,14 @@ export function PipelineBoard({
       error?: string;
       wrote?: boolean;
       application?: FuelApplication;
-      record?: Record<string, unknown>;
+      request?: Record<string, unknown>;
     } | null;
     setBusy(false);
     if (!response.ok || !body?.application) {
       setError(body?.error ?? "The application was not updated.");
       return;
     }
-    setPreview(body.wrote ? null : (body.record ?? null));
+    setPreview(body.wrote ? null : (body.request ?? null));
     setMessage(body.wrote ? `Saved ${body.application.projectName} in Fuel CRM.` : `Dry run for ${body.application.projectName}. Fuel CRM was not updated.`);
     await onReload();
     setSelectedId(body.application.id);
@@ -302,8 +302,8 @@ export function PipelineBoard({
                   {error ? <p className="form-note" role="alert">{error}</p> : null}
                   {message ? <p className="form-note" role="status">{message}</p> : null}
                   {preview ? (
-                    <details className="payload-preview">
-                      <summary>Dry-run payload</summary>
+                    <details className="payload-preview" open>
+                      <summary>Payload preview</summary>
                       <pre>{JSON.stringify(preview, null, 2)}</pre>
                     </details>
                   ) : null}

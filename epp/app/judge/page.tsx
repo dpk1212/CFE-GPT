@@ -21,6 +21,7 @@ export default async function JudgePage() {
       <JudgeWorkspace
         judgeName={account?.name ?? "Judge"}
         judgeEmail={session.email}
+        adminView={session.role === "admin"}
       />
     </>
   );

@@ -28,6 +28,7 @@ type DashboardPayload = {
 type Props = {
   judgeName: string;
   judgeEmail: string;
+  adminView?: boolean;
 };
 
 type WrittenDraft = {
@@ -158,7 +159,7 @@ function pitchBlank(draft: PitchDraft) {
   );
 }
 
-export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
+export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Props) {
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formStep, setFormStep] = useState(1);
@@ -375,6 +376,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
       project?: string;
       wrote?: boolean;
       record?: Record<string, unknown>;
+      request?: Record<string, unknown>;
     } | null;
     setBusy(false);
     if (!response.ok) {
@@ -390,7 +392,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
     setPitch(blankPitch());
     setFormStep(1);
     setDraftNote("");
-    setPayloadPreview(body?.wrote ? null : (body?.record ?? null));
+    setPayloadPreview(body?.wrote ? null : adminView ? (body?.request ?? null) : (body?.record ?? null));
     setMessage(
       body?.wrote
         ? `Review submitted for ${body.project}.`
@@ -637,8 +639,8 @@ export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
                 {error ? <p className="form-note" role="alert">{error}</p> : null}
                 {message ? <p className="form-note" role="status">{message}</p> : null}
                 {payloadPreview ? (
-                  <details className="payload-preview">
-                    <summary>Dry-run payload</summary>
+                  <details className="payload-preview" open={adminView}>
+                    <summary>{adminView ? "Payload preview" : "Dry-run payload"}</summary>
                     <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
                   </details>
                 ) : null}

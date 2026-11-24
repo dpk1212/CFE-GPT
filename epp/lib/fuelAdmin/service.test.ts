@@ -36,6 +36,11 @@ test("a dry run records the old and new values and does not call Zoho", async ()
   assert.equal(result.wrote, false);
   assert.equal(result.record.Stage, "Out For Initial Review");
   assert.equal(result.record.What_Funding_Are_You_Requesting, 8000);
+  assert.equal(result.request?.method, "PUT");
+  assert.equal(result.request?.path, "/crm/v8/Deals");
+  assert.deepEqual(result.request?.body.trigger, ["workflow", "blueprint", "approval"]);
+  assert.equal(result.request?.body.data[0].id, "sample-harbor");
+  assert.equal(result.request?.body.data[0].Stage, "Out For Initial Review");
   assert.deepEqual(
     result.changes.map((change) => change.field),
     ["Stage", "What_Funding_Are_You_Requesting"],
@@ -107,6 +112,7 @@ test("live admin writes update the deal and leave review creates off", async () 
   );
   assert.equal(writes, 1);
   assert.equal(result.wrote, true);
+  assert.equal(result.request, undefined);
   assert.equal(fuelWritesEnabled(), false);
 });
 
