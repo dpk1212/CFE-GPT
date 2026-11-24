@@ -2,16 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { FeedbackDocView } from "@/components/FeedbackDocView";
-import { RATING_SCALE } from "@/lib/fuelJudge/columns";
+import type { FeedbackDocument } from "@/lib/fuelFeedback/types";
 
 const STORAGE_KEY = "epp-initial-judges-feedback-open";
 
 export function InitialJudgesFeedbackPanel({
   applicationId,
   workbench = false,
+  document,
+  loading,
+  error,
+  preferredRoundId,
 }: {
   applicationId: string;
   workbench?: boolean;
+  document?: FeedbackDocument | null;
+  loading?: boolean;
+  error?: string;
+  preferredRoundId?: string | null;
 }) {
   const [open, setOpen] = useState(true);
 
@@ -31,31 +39,53 @@ export function InitialJudgesFeedbackPanel({
 
   return (
     <section
-      className={`initial-judges-feedback${open ? " is-open" : ""}${workbench ? " is-workbench" : ""}`}
+      className={`initial-judges-feedback${open ? " is-open" : ""}${workbench ? " is-workbench is-elite" : ""}`}
       aria-label="Initial judges' feedback"
     >
-      <button
-        type="button"
-        className="initial-judges-feedback-toggle"
-        onClick={toggle}
-        aria-expanded={open}
-      >
-        <span className="initial-judges-feedback-kicker">Anonymized · Rubric order</span>
-        <span className="initial-judges-feedback-label">Initial judges&apos; feedback</span>
-        <span className="initial-judges-feedback-action">{open ? "Minimize" : "Expand"}</span>
-      </button>
-      {open ? (
-        <div className="initial-judges-feedback-body">
-          {workbench ? (
-            <ul className="scale-legend scale-legend-inline feedback-scale-legend" aria-label="Rubric score scale">
-              {RATING_SCALE.map((option) => (
-                <li key={option.value}>
-                  <strong>{option.value}</strong> {option.label}
-                </li>
-              ))}
-            </ul>
+      {workbench ? null : (
+        <button
+          type="button"
+          className="initial-judges-feedback-toggle"
+          onClick={toggle}
+          aria-expanded={open}
+        >
+          <span className="initial-judges-feedback-kicker">Anonymized · Rubric order</span>
+          <span className="initial-judges-feedback-label">Initial judges&apos; feedback</span>
+          <span className="initial-judges-feedback-action">{open ? "Minimize" : "Expand"}</span>
+        </button>
+      )}
+      {workbench ? (
+        <div className="initial-judges-feedback-elite-shell">
+          <button
+            type="button"
+            className="initial-judges-feedback-minimize"
+            onClick={toggle}
+            aria-expanded={open}
+          >
+            {open ? "Minimize" : "Expand initial judges' feedback"}
+          </button>
+          {open ? (
+            <FeedbackDocView
+              applicationId={applicationId}
+              compact
+              workbench
+              document={document}
+              loading={loading}
+              error={error}
+              preferredRoundId={preferredRoundId}
+            />
           ) : null}
-          <FeedbackDocView applicationId={applicationId} compact workbench={workbench} />
+        </div>
+      ) : open ? (
+        <div className="initial-judges-feedback-body">
+          <FeedbackDocView
+            applicationId={applicationId}
+            compact
+            document={document}
+            loading={loading}
+            error={error}
+            preferredRoundId={preferredRoundId}
+          />
         </div>
       ) : null}
     </section>

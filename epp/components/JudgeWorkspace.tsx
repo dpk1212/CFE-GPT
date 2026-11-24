@@ -10,6 +10,11 @@ import {
   WRITTEN_RUBRIC,
 } from "@/lib/fuelJudge/columns";
 import { pipelineChipClass, pipelineLabel } from "@/lib/fuelAdmin/metrics";
+import {
+  initialFeedbackRound,
+  roundForForm,
+  useFeedbackDocument,
+} from "@/lib/fuelFeedback/useFeedbackDocument";
 import type {
   FuelApplication,
   FuelColumnId,
@@ -283,6 +288,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
   const reviewedCount = dashboard?.applications.filter((row) => reviewed.has(row.id)).length ?? 0;
   const openCount = (dashboard?.applications.length ?? 0) - reviewedCount;
   const formId: FuelFormId | null = dashboard?.stage.form ?? null;
+  const feedback = useFeedbackDocument(selected?.id ?? null);
   const dirty =
     Boolean(dashboard && selectedId && formId) &&
     !(selectedId && reviewed.has(selectedId)) &&
@@ -534,6 +540,8 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
     : 0;
   const status = selected ? appStatus(selected.id) : "open";
   const industries = selected ? industryChips(selected.industries) : [];
+  const reviewsThisRound = selected && formId ? roundForForm(feedback.doc, formId)?.reviewCount ?? 0 : 0;
+  const initialRound = initialFeedbackRound(feedback.doc);
   void draftTick;
 
   return (
@@ -675,40 +683,47 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
               {selected.summary || "No one-sentence summary is on this application."}
             </p>
 
-            <div className="judge-fact-strip" aria-label="Key facts">
+            <div className="judge-app-spotlight" aria-label="Key facts">
               {columns.has("fundingRequested") ? (
-                <div>
-                  <span>Funding</span>
-                  <strong>{money(selected.fundingRequested)}</strong>
+                <div className="judge-funding-hero">
+                  <span className="judge-funding-label">Funding requested</span>
+                  <strong className="judge-funding-figure">{money(selected.fundingRequested)}</strong>
                 </div>
               ) : null}
-              <div>
-                <span>Pipeline</span>
-                <strong>
-                  <span className={pipelineChipClass(selected.pipeline)}>{pipelineLabel(selected.pipeline)}</span>
-                </strong>
+
+              <div className="judge-round-reviews" aria-live="polite">
+                <span className="judge-round-label">Judge reviews this round</span>
+                <div className="judge-round-body">
+                  <strong>{feedback.loading ? "…" : reviewsThisRound}</strong>
+                  <span>
+                    {feedback.loading
+                      ? "loading"
+                      : reviewsThisRound === 1
+                        ? "judge reviewed"
+                        : "judges reviewed"}
+                  </span>
+                  {!feedback.loading && reviewsThisRound > 0 ? (
+                    <ul className="judge-round-dots" aria-hidden="true">
+                      {Array.from({ length: Math.min(reviewsThisRound, 12) }).map((_, index) => (
+                        <li key={index} />
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
               </div>
+
               {columns.has("industries") ? (
                 <div className="judge-fact-industries">
                   <span>Industries</span>
-                  <strong>
-                    {industries.length ? (
-                      <ul className="industry-chip-list">
-                        {industries.slice(0, 4).map((chip) => (
-                          <li key={chip} title={chip}>{chip}</li>
-                        ))}
-                        {industries.length > 4 ? <li className="is-more">+{industries.length - 4}</li> : null}
-                      </ul>
-                    ) : (
-                      "—"
-                    )}
-                  </strong>
-                </div>
-              ) : null}
-              {columns.has("totalReviews") ? (
-                <div>
-                  <span>Reviews</span>
-                  <strong>{selected.totalReviews ?? "—"}</strong>
+                  {industries.length ? (
+                    <ul className="industry-chip-list">
+                      {industries.map((chip) => (
+                        <li key={chip}>{chip}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <strong>—</strong>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -735,7 +750,14 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
             ) : null}
 
             {columns.has("initialFeedback") ? (
-              <InitialJudgesFeedbackPanel applicationId={selected.id} workbench />
+              <InitialJudgesFeedbackPanel
+                applicationId={selected.id}
+                workbench
+                document={feedback.doc}
+                loading={feedback.loading}
+                error={feedback.error}
+                preferredRoundId={initialRound?.id}
+              />
             ) : null}
           </section>
 
