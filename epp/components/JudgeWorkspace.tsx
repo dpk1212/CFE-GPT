@@ -356,6 +356,10 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
     function onKey(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
       if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      /* Feedback question stepper owns Left/Right while focused — do not steal them for app nav. */
+      if (target?.closest(".feedback-stepper") || document.activeElement?.closest?.(".feedback-stepper")) {
+        if (event.key === "ArrowLeft" || event.key === "ArrowRight") return;
+      }
       if (!rows.length) return;
       const forward = event.key === "j" || event.key === "ArrowDown" || event.key === "ArrowRight";
       const backward = event.key === "k" || event.key === "ArrowUp" || event.key === "ArrowLeft";
@@ -653,11 +657,11 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
                 </div>
               </div>
               <div className="read-move">
-                <button className="btn-line" type="button" onClick={() => move(-1)} disabled={selectedIndex <= 0}>
+                <button className="btn-on-light" type="button" onClick={() => move(-1)} disabled={selectedIndex <= 0}>
                   Previous
                 </button>
                 <button
-                  className="btn-line"
+                  className="btn-on-light"
                   type="button"
                   onClick={() => move(1)}
                   disabled={selectedIndex < 0 || selectedIndex >= rows.length - 1}
@@ -775,7 +779,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail, adminView = false }: Pro
               )}
               <div className="judge-form-actions">
                 {formStep > 1 ? (
-                  <button className="btn-line" type="button" onClick={() => setFormStep((step) => step - 1)}>
+                  <button className="btn-on-light" type="button" onClick={() => setFormStep((step) => step - 1)}>
                     Back
                   </button>
                 ) : (
