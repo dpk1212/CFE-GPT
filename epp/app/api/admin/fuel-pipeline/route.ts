@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { listFuelPipeline, updateFuelApplication, updateFuelStages } from "@/lib/fuelAdmin/service";
+import { listFuelPipeline, updateFuelApplication, updateFuelStageOrder, updateFuelStages } from "@/lib/fuelAdmin/service";
 import { FuelJudgeError } from "@/lib/fuelJudge/service";
 import { openSession, SESSION_COOKIE } from "@/lib/session";
 
@@ -33,8 +33,17 @@ export async function POST(request: Request) {
     fields?: unknown;
     applicationIds?: unknown;
     stage?: unknown;
+    stageOrder?: unknown;
+    resetStageOrder?: unknown;
   } | null;
   try {
+    if (body && (body.resetStageOrder === true || Array.isArray(body.stageOrder))) {
+      if (Array.isArray(body.stageOrder) && body.stageOrder.some((stage) => typeof stage !== "string")) {
+        return NextResponse.json({ error: "Choose a stage order." }, { status: 400 });
+      }
+      const order = body.resetStageOrder === true ? null : (body.stageOrder as string[]);
+      return NextResponse.json(await updateFuelStageOrder(order));
+    }
     if (body && Array.isArray(body.applicationIds)) {
       const ids = body.applicationIds.filter((id): id is string => typeof id === "string");
       if (ids.length !== body.applicationIds.length || typeof body.stage !== "string") {

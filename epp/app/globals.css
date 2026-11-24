@@ -2784,3 +2784,26 @@ p { margin: 0; }
   accent-color: var(--blue);
 }
 .kanban-pick { padding-top: 14px; }
+.column-order-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.column-order-bar .btn-line { min-height: 36px; padding: 8px 12px; }
+.column-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(0, 39, 76, 0.16);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--blue);
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+}
+.column-drag:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.kanban-column.is-dragging { opacity: 0.72; }

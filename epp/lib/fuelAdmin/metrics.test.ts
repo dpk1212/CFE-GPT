@@ -8,10 +8,33 @@ import {
   completeness,
   dedupeById,
   fundingSum,
+  mergeStageOrder,
   missingRequired,
+  stageColumnOrder,
   staleApplications,
 } from "./metrics";
 import { parseStoredReview } from "./reviews";
+
+test("a saved column order is display-only and unknown stages append", () => {
+  const saved = mergeStageOrder([], ["No Funding", "Ready For Initial Review"]);
+  assert.ok(saved.indexOf("No Funding") < saved.indexOf("Ready For Initial Review"));
+  assert.ok(saved.indexOf("Funding Awarded") > saved.indexOf("No Funding"));
+  const visible = stageColumnOrder(
+    ["Ready For Initial Review", "No Funding", "Custom Live Stage"],
+    saved,
+  );
+  assert.deepEqual(visible, ["No Funding", "Ready For Initial Review", "Custom Live Stage"]);
+  assert.deepEqual(
+    stageColumnOrder(["Ready For Initial Review", "No Funding"], []),
+    ["Ready For Initial Review", "No Funding"],
+  );
+});
+
+test("reordering visible columns leaves a hidden stage where it was", () => {
+  const saved = ["Ready For Initial Review", "Hidden Stage", "No Funding"];
+  const next = mergeStageOrder(saved, ["No Funding", "Ready For Initial Review"]);
+  assert.deepEqual(next.slice(0, 3), ["No Funding", "Hidden Stage", "Ready For Initial Review"]);
+});
 
 test("duplicate deal ids collapse and two deals that share a name both stay", () => {
   const first = SAMPLE_APPLICATIONS[0];

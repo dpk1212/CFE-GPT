@@ -14,7 +14,8 @@ import {
   type DealChange,
   type EditableDeal,
 } from "./fields";
-import { loadFuelAdminState, recordFuelAdminChange, type FuelAuditEntry } from "./store";
+import { mergeStageOrder } from "./metrics";
+import { loadFuelAdminState, recordFuelAdminChange, saveFuelStageOrder, type FuelAuditEntry } from "./store";
 
 export type FuelDealWriter = {
   updateDeal: (id: string, fields: Record<string, string | number | null>) => Promise<{ id: string }>;
@@ -40,6 +41,7 @@ export async function listFuelPipeline(options?: {
       writesEnabled: fuelAdminWritesEnabled(),
       applications,
       audit: state.audit.slice(-12).reverse(),
+      stageOrder: state.stageOrder,
       truncated: listedMeta(listed).truncated,
       omitted: listedMeta(listed).omitted,
       syncing: false,
@@ -54,6 +56,7 @@ export async function listFuelPipeline(options?: {
       writesEnabled: fuelAdminWritesEnabled(),
       applications,
       audit: state.audit.slice(-12).reverse(),
+      stageOrder: state.stageOrder,
       truncated: false,
       omitted: 0,
       syncing: true,
@@ -199,6 +202,19 @@ export async function updateFuelStages(
   }
 
   return { wrote: true, stage: target, updated, unchanged, failed };
+}
+
+/** Display order only. This does not write a deal or change a Zoho stage. */
+export async function updateFuelStageOrder(visibleOrder: string[] | null, options?: { durable?: boolean }) {
+  const state = await loadFuelAdminState({ durable: options?.durable });
+  if (visibleOrder === null) {
+    const saved = await saveFuelStageOrder([], { durable: options?.durable });
+    return { stageOrder: saved.stageOrder };
+  }
+  const names = visibleOrder.map((stage) => stage.trim()).filter(Boolean);
+  if (!names.length) throw new FuelJudgeError("Choose a stage order.", 400);
+  const saved = await saveFuelStageOrder(mergeStageOrder(state.stageOrder, names), { durable: options?.durable });
+  return { stageOrder: saved.stageOrder };
 }
 
 function mergeOverlay(application: FuelApplication, overlay: EditableDeal | undefined) {

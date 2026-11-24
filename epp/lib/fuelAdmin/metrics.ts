@@ -51,6 +51,49 @@ export function orderedStages(present: Iterable<string> = []) {
   return order;
 }
 
+/** Visible Kanban columns. A saved order wins; stages it has never seen are appended. */
+export function stageColumnOrder(present: Iterable<string>, saved: readonly string[] = []) {
+  const visible = [...present].filter((stage) => Boolean(stage));
+  if (!saved.length) return orderedStages(visible).filter((stage) => visible.includes(stage));
+  const result: string[] = [];
+  for (const stage of saved) {
+    if (visible.includes(stage) && !result.includes(stage)) result.push(stage);
+  }
+  for (const stage of visible) {
+    if (!result.includes(stage)) result.push(stage);
+  }
+  return result;
+}
+
+/** Keep hidden stages in place while the visible columns take their new order. */
+export function mergeStageOrder(saved: readonly string[], visibleOrder: readonly string[]) {
+  const base = saved.length ? [...saved] : [...FUEL_STATUSES];
+  const visible = new Set(visibleOrder);
+  const queue = [...visibleOrder];
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const stage of base) {
+    if (!stage || seen.has(stage)) continue;
+    if (visible.has(stage)) {
+      const replacement = queue.shift();
+      if (replacement && !seen.has(replacement)) {
+        next.push(replacement);
+        seen.add(replacement);
+      }
+      continue;
+    }
+    next.push(stage);
+    seen.add(stage);
+  }
+  for (const stage of queue) {
+    if (!seen.has(stage)) {
+      next.push(stage);
+      seen.add(stage);
+    }
+  }
+  return next;
+}
+
 type DocKey = (typeof REQUIRED_DOCS)[number]["key"] | (typeof SUPPORTING_DOCS)[number]["key"];
 
 export function dedupeById(applications: FuelApplication[]) {

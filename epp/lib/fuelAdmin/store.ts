@@ -20,9 +20,11 @@ export type FuelAuditEntry = {
 type AdminState = {
   audit: FuelAuditEntry[];
   overlays: Record<string, EditableDeal>;
+  /** Empty means the default Fuel stage order. Shared by every admin. */
+  stageOrder: string[];
 };
 
-let memory: AdminState = { audit: [], overlays: {} };
+let memory: AdminState = { audit: [], overlays: {}, stageOrder: [] };
 let chain: Promise<unknown> = Promise.resolve();
 
 function exclusive<T>(task: () => Promise<T>) {
@@ -39,7 +41,7 @@ function localPath() {
 }
 
 function empty(): AdminState {
-  return { audit: [], overlays: {} };
+  return { audit: [], overlays: {}, stageOrder: [] };
 }
 
 export function resetFuelAdminState() {
@@ -85,13 +87,28 @@ function hydrate(raw: AdminState | null): AdminState {
   return {
     audit: Array.isArray(raw.audit) ? raw.audit.slice(-AUDIT_LIMIT) : [],
     overlays: raw.overlays && typeof raw.overlays === "object" ? raw.overlays : {},
+    stageOrder: cleanStageOrder(raw.stageOrder),
   };
+}
+
+function cleanStageOrder(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const order: string[] = [];
+  for (const stage of value) {
+    if (typeof stage !== "string") continue;
+    const name = stage.trim();
+    if (!name || name.length > 80 || order.includes(name)) continue;
+    order.push(name);
+    if (order.length >= 40) break;
+  }
+  return order;
 }
 
 export function getFuelAdminState() {
   return {
     audit: memory.audit.map((entry) => ({ ...entry, changes: entry.changes.map((change) => ({ ...change })) })),
     overlays: { ...memory.overlays },
+    stageOrder: [...memory.stageOrder],
   };
 }
 
@@ -111,6 +128,21 @@ export async function recordFuelAdminChange(
   const apply = () => {
     memory.audit = [...memory.audit, entry].slice(-AUDIT_LIMIT);
     if (overlay) memory.overlays = { ...memory.overlays, [overlay.id]: overlay.fields };
+    return getFuelAdminState();
+  };
+  if (options?.durable === false) return apply();
+  return exclusive(async () => {
+    memory = hydrate(await readRaw());
+    apply();
+    await writeRaw(memory);
+    return getFuelAdminState();
+  });
+}
+
+export async function saveFuelStageOrder(stageOrder: string[], options?: { durable?: boolean }) {
+  const next = cleanStageOrder(stageOrder);
+  const apply = () => {
+    memory.stageOrder = next;
     return getFuelAdminState();
   };
   if (options?.durable === false) return apply();

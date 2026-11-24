@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { arrayMove } from "@dnd-kit/sortable";
 import { ApplicationReview } from "@/components/admin/ApplicationReview";
+import { KanbanColumns, SortableStageColumn } from "@/components/admin/KanbanColumns";
 import { MassStageMove } from "@/components/admin/MassStageMove";
 import { PIPELINE_VIEW_KEY, money, pipelineShort } from "@/components/admin/adminFormat";
 import { stageTone } from "@/components/admin/stageTone";
@@ -11,8 +13,9 @@ import {
   feedbackBadge,
   formatMoney,
   fundingSum,
-  orderedStages,
+  mergeStageOrder,
   pipelineChipClass,
+  stageColumnOrder,
   pipelineLabel,
   stageSlug,
 } from "@/lib/fuelAdmin/metrics";
@@ -24,6 +27,7 @@ type BoardPayload = {
   writesEnabled: boolean;
   applications: FuelApplication[];
   audit: FuelAuditEntry[];
+  stageOrder?: string[];
   truncated?: boolean;
   omitted?: number;
 };
@@ -55,6 +59,8 @@ export function PipelineBoard({
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({ key: "projectName", dir: "asc" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pickedIds, setPickedIds] = useState<string[]>([]);
+  const [stageOrder, setStageOrder] = useState<string[]>([]);
+  const [orderNote, setOrderNote] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<Record<string, unknown> | null>(null);
@@ -92,14 +98,18 @@ export function PipelineBoard({
     });
   }, [board, pipeline, query, stage]);
 
+  useEffect(() => {
+    setStageOrder(board?.stageOrder ?? []);
+  }, [board?.stageOrder]);
+
   const columns = useMemo(() => {
-    return orderedStages(rows.map((row) => row.stage))
+    return stageColumnOrder(rows.map((row) => row.stage), stageOrder)
       .map((name) => {
         const apps = rows.filter((row) => row.stage === name);
         return { stage: name, rows: apps, funding: fundingSum(apps).sum };
       })
       .filter((group) => group.rows.length);
-  }, [rows]);
+  }, [rows, stageOrder]);
 
   const sortedRows = useMemo(() => {
     const copy = [...rows];
@@ -214,6 +224,51 @@ export function PipelineBoard({
     await onReload();
   }
 
+  async function persistOrder(visibleOrder: string[]) {
+    const previous = stageOrder;
+    setStageOrder(mergeStageOrder(previous, visibleOrder));
+    setOrderNote("");
+    const response = await fetch("/api/admin/fuel-pipeline", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ stageOrder: visibleOrder }),
+    });
+    const body = (await response.json().catch(() => null)) as { error?: string; stageOrder?: string[] } | null;
+    if (!response.ok || !body?.stageOrder) {
+      setStageOrder(previous);
+      setOrderNote(body?.error ?? "The column order was not saved.");
+      return;
+    }
+    setStageOrder(body.stageOrder);
+  }
+
+  function reorderColumns(activeId: string, overId: string) {
+    const visible = columns.map((column) => column.stage);
+    const from = visible.indexOf(activeId);
+    const to = visible.indexOf(overId);
+    if (from < 0 || to < 0 || from === to) return;
+    void persistOrder(arrayMove(visible, from, to));
+  }
+
+  async function resetOrder() {
+    const previous = stageOrder;
+    setStageOrder([]);
+    setOrderNote("");
+    const response = await fetch("/api/admin/fuel-pipeline", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ resetStageOrder: true }),
+    });
+    const body = (await response.json().catch(() => null)) as { error?: string; stageOrder?: string[] } | null;
+    if (!response.ok || !body) {
+      setStageOrder(previous);
+      setOrderNote(body?.error ?? "The column order was not reset.");
+      return;
+    }
+    setStageOrder(body.stageOrder ?? []);
+    setOrderNote("Column order reset for every admin.");
+  }
+
   function toggleSort(key: SortKey) {
     setSort((current) =>
       current.key === key ? { key, dir: current.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
@@ -291,9 +346,16 @@ export function PipelineBoard({
 
           {view === "board" && rows.length > 0 ? (
             <div className="kanban-scroller">
-              <div className="kanban-board">
+              <div className="column-order-bar">
+                <p className="sr-only">Drag a column by its reorder control, or focus that control and use the arrow keys.</p>
+                <button className="btn-line" type="button" onClick={() => void resetOrder()}>Reset order</button>
+                {orderNote ? <p className="form-note" role="status">{orderNote}</p> : null}
+              </div>
+              <KanbanColumns ids={columns.map((column) => column.stage)} onReorder={reorderColumns}>
                 {columns.map((column) => (
-                  <section key={column.stage} className="kanban-column">
+                  <SortableStageColumn key={column.stage} id={column.stage}>
+                    {(handle) => (
+                    <>
                     <header>
                       <div>
                         <h3>
@@ -306,6 +368,15 @@ export function PipelineBoard({
                               onChange={(event) => setPicked(column.rows.map((row) => row.id), event.target.checked)}
                             />
                           </label>
+                          <button
+                            type="button"
+                            className="column-drag"
+                            aria-label={`Reorder ${column.stage}`}
+                            {...handle.attributes}
+                            {...handle.listeners}
+                          >
+                            <span aria-hidden="true">⋮⋮</span>
+                          </button>
                           <span className={`stage-chip tone-${stageTone(column.stage)}`} data-stage={stageSlug(column.stage)}>
                             {column.stage}
                           </span>
@@ -351,9 +422,11 @@ export function PipelineBoard({
                         );
                       })}
                     </ul>
-                  </section>
+                    </>
+                    )}
+                  </SortableStageColumn>
                 ))}
-              </div>
+              </KanbanColumns>
             </div>
           ) : null}
 

@@ -3,7 +3,7 @@ import test from "node:test";
 import { SAMPLE_APPLICATIONS } from "../fuelJudge/catalog";
 import { fuelWritesEnabled } from "../fuelJudge/service";
 import { readEditable } from "./fields";
-import { fuelAdminWritesEnabled, listFuelPipeline, updateFuelApplication, updateFuelStages } from "./service";
+import { fuelAdminWritesEnabled, listFuelPipeline, updateFuelApplication, updateFuelStageOrder, updateFuelStages } from "./service";
 import { resetFuelAdminState } from "./store";
 
 test.beforeEach(() => {
@@ -115,6 +115,21 @@ test("live admin writes update the deal and leave review creates off", async () 
   assert.equal(result.wrote, true);
   assert.equal(result.request, undefined);
   assert.equal(fuelWritesEnabled(), false);
+});
+
+test("column order is stored without writing a deal", async () => {
+  const saved = await updateFuelStageOrder(["No Funding", "Ready For Initial Review"], { durable: false });
+  assert.ok(saved.stageOrder.indexOf("No Funding") < saved.stageOrder.indexOf("Ready For Initial Review"));
+  const listed = await listFuelPipeline({
+    durable: false,
+    async source() {
+      return SAMPLE_APPLICATIONS;
+    },
+  });
+  assert.deepEqual(listed.stageOrder, saved.stageOrder);
+  assert.equal(fuelAdminWritesEnabled(), false);
+  const reset = await updateFuelStageOrder(null, { durable: false });
+  assert.deepEqual(reset.stageOrder, []);
 });
 
 test("a mass stage move stays off unless admin writes are on", async () => {
