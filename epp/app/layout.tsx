@@ -10,7 +10,7 @@ const sans = Poppins({ weight: ["400", "700", "800"], subsets: ["latin"], variab
 
 export const metadata: Metadata = {
   title: { default: "Entrepreneurial Practice Programs | Center for Entrepreneurship", template: "%s | CFE Entrepreneurial Practice Programs" },
-  description: "The Entrepreneurial Leadership Program, Perot Jain TechLab Series, and student endeavors at the University of Michigan Center for Entrepreneurship.",
+  description: "The Entrepreneurial Practice Programs portal. Admins and judges sign in here. The Launch programs, including Fuel, are linked to their official Center for Entrepreneurship pages.",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
