@@ -39,14 +39,14 @@ export function LoginForm({ next }: { next?: string }) {
       </fieldset>
       <label>
         Email
-        <input type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
+        <input type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} aria-describedby={error ? "login-error" : undefined} required />
       </label>
       <label>
         Password
-        <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+        <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} aria-describedby={error ? "login-error" : undefined} required />
       </label>
       <button className="btn-solid" type="submit" disabled={pending}>{pending ? "Signing in" : "Sign in"}</button>
-      {error ? <p className="form-note" role="status">{error}</p> : null}
+      {error ? <p className="form-note" id="login-error" role="status">{error}</p> : null}
     </form>
   );
 }

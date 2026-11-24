@@ -37,18 +37,18 @@ export function RequestForm() {
       <p className="quiet">This request is for judge access. Any email is fine. An admin approves it before the account can sign in.</p>
       <label>
         Name
-        <input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required />
+        <input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" aria-describedby={error ? "request-error" : undefined} required />
       </label>
       <label>
         Email
-        <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required />
+        <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" aria-describedby={error ? "request-error" : undefined} required />
       </label>
       <label>
         Password
-        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={8} required />
+        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength={8} aria-describedby={error ? "request-error" : undefined} required />
       </label>
       <button className="btn-solid" type="submit" disabled={pending}>{pending ? "Sending" : "Request access"}</button>
-      {error ? <p className="form-note" role="status">{error}</p> : null}
+      {error ? <p className="form-note" id="request-error" role="status">{error}</p> : null}
     </form>
   );
 }
