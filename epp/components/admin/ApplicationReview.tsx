@@ -10,6 +10,7 @@ import {
   documentChecklist,
   formatMoney,
   orderedStages,
+  pipelineChipClass,
   pipelineLabel,
   stageSlug,
 } from "@/lib/fuelAdmin/metrics";
@@ -143,7 +144,7 @@ export function ApplicationReview({
             <p className="cc-eyebrow">Application review</p>
             <h3>{application.projectName}</h3>
             <div className="app-review-meta">
-              <span className="pipeline-chip">{pipelineLabel(application.pipeline)}</span>
+              <span className={pipelineChipClass(application.pipeline)}>{pipelineLabel(application.pipeline)}</span>
               <span className={`stage-chip tone-${stageTone(application.stage)}`} data-stage={stageSlug(application.stage)}>
                 {application.stage}
               </span>
@@ -201,7 +202,7 @@ export function ApplicationReview({
                     {doc.url ? (
                       <a href={doc.url} target="_blank" rel="noreferrer">Open</a>
                     ) : (
-                      <em>Missing</em>
+                      <em>Not provided</em>
                     )}
                   </li>
                 ))}

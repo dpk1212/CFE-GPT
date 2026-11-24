@@ -11,6 +11,7 @@ import {
   formatMoney,
   fundingSum,
   orderedStages,
+  pipelineChipClass,
   pipelineLabel,
   stageSlug,
 } from "@/lib/fuelAdmin/metrics";
@@ -250,7 +251,7 @@ export function PipelineBoard({
                               onClick={() => openApplication(application)}
                             >
                               <strong>{application.projectName}</strong>
-                              <span className="pipeline-chip">{pipelineLabel(application.pipeline)}</span>
+                              <span className={pipelineChipClass(application.pipeline)}>{pipelineLabel(application.pipeline)}</span>
                               <span className="kanban-funding">{money(application.fundingRequested)}</span>
                               <span className="meter" aria-label={`${complete.present} of ${complete.required} required documents`}>
                                 <span style={{ width: `${(complete.present / complete.required) * 100}%` }} />
@@ -307,7 +308,7 @@ export function PipelineBoard({
                           </button>
                           {application.summary ? <span className="desk-summary">{application.summary}</span> : null}
                         </th>
-                        <td><span className="pipeline-chip">{pipelineShort(application.pipeline)}</span></td>
+                        <td><span className={pipelineChipClass(application.pipeline)}>{pipelineShort(application.pipeline)}</span></td>
                         <td><span className={`stage-chip tone-${stageTone(application.stage)}`}>{application.stage}</span></td>
                         <td>{money(application.fundingRequested)}</td>
                         <td>

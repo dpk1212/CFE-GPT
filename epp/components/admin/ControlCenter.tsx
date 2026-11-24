@@ -13,6 +13,7 @@ import {
   missingRequired,
   orderedStages,
   pipelineBreakdown,
+  pipelineChipClass,
   pipelineLabel,
   reviewTotals,
   staleApplications,
@@ -331,7 +332,7 @@ export function ControlCenter({
             {pipelines.map((item) => (
               <li key={item.pipeline}>
                 <button type="button" onClick={() => onOpen("pipeline", { pipeline: item.pipeline })}>
-                  <span className="pipeline-chip">{pipelineLabel(item.pipeline)}</span>
+                  <span className={pipelineChipClass(item.pipeline)}>{pipelineLabel(item.pipeline)}</span>
                   <strong>{item.count}</strong>
                   <span>{formatMoney(item.funding)}</span>
                   <em>
