@@ -1,6 +1,7 @@
 import { SAMPLE_APPLICATIONS } from "@/lib/fuelJudge/catalog";
 import { dealToApplication, FUEL_DEAL_FIELDS } from "@/lib/fuelJudge/mapping";
 import { FuelJudgeError, fuelCrmMode } from "@/lib/fuelJudge/service";
+import { getZohoAccessToken, readZohoCatalog, rememberZohoCatalog, ZohoRateLimitError, ZohoTokenError } from "@/lib/zohoToken";
 import { FUEL_PIPELINES, FUEL_STATUSES, type FuelApplication } from "@/lib/fuelJudge/types";
 import {
   applyEditable,
@@ -27,15 +28,30 @@ export async function listFuelPipeline(options?: {
 }) {
   const state = await loadFuelAdminState({ durable: options?.durable });
   const source = options?.source ?? listFromConfiguredSource;
-  const applications = (await source())
-    .filter((row) => (FUEL_PIPELINES as readonly string[]).includes(row.pipeline))
-    .map((row) => mergeOverlay(row, state.overlays[row.id]));
-  return {
-    mode: fuelCrmMode(),
-    writesEnabled: fuelAdminWritesEnabled(),
-    applications,
-    audit: state.audit.slice(-12).reverse(),
-  };
+  try {
+    const applications = (await source())
+      .filter((row) => (FUEL_PIPELINES as readonly string[]).includes(row.pipeline))
+      .map((row) => mergeOverlay(row, state.overlays[row.id]));
+    return {
+      mode: fuelCrmMode(),
+      writesEnabled: fuelAdminWritesEnabled(),
+      applications,
+      audit: state.audit.slice(-12).reverse(),
+      syncing: false,
+    };
+  } catch (err) {
+    if (!(err instanceof ZohoRateLimitError)) throw err;
+    const applications = err.applications
+      .filter((row) => (FUEL_PIPELINES as readonly string[]).includes(row.pipeline))
+      .map((row) => mergeOverlay(row, state.overlays[row.id]));
+    return {
+      mode: fuelCrmMode(),
+      writesEnabled: fuelAdminWritesEnabled(),
+      applications,
+      audit: state.audit.slice(-12).reverse(),
+      syncing: true,
+    };
+  }
 }
 
 export async function updateFuelApplication(
@@ -101,14 +117,22 @@ function mergeOverlay(application: FuelApplication, overlay: EditableDeal | unde
 
 async function listFromConfiguredSource() {
   if (fuelCrmMode() !== "live") return SAMPLE_APPLICATIONS.map((row) => ({ ...row, initialFeedback: [...row.initialFeedback] }));
-  const token = await fuelAccessToken();
+  let token: string;
+  try {
+    token = await getZohoAccessToken();
+  } catch (err) {
+    if (err instanceof ZohoRateLimitError) throw new ZohoRateLimitError(await readZohoCatalog("admin") ?? []);
+    throw tokenFailure(err);
+  }
   const domain = requiredEnv("FUEL_ZOHO_API_DOMAIN");
   const pipelines = FUEL_PIPELINES.map((pipeline) => `'${pipeline.replace(/'/g, "")}'`).join(",");
   const rows = await coql(token, domain, `select ${FUEL_DEAL_FIELDS} from Deals where Pipeline in (${pipelines}) limit 200`);
-  return rows
+  const applications = rows
     .map((row) => dealToApplication(row))
     .filter((row): row is FuelApplication => Boolean(row))
     .filter((row) => (FUEL_PIPELINES as readonly string[]).includes(row.pipeline));
+  await rememberZohoCatalog("admin", applications);
+  return applications;
 }
 
 async function updateDealInZoho(id: string, fields: Record<string, string | number | null>) {
@@ -161,22 +185,17 @@ async function coql(token: string, domain: string, selectQuery: string) {
 }
 
 async function fuelAccessToken() {
-  const body = new URLSearchParams({
-    refresh_token: requiredEnv("FUEL_ZOHO_REFRESH_TOKEN"),
-    client_id: requiredEnv("FUEL_ZOHO_CLIENT_ID"),
-    client_secret: requiredEnv("FUEL_ZOHO_CLIENT_SECRET"),
-    grant_type: "refresh_token",
-  });
-  const response = await fetch(`${requiredEnv("FUEL_ZOHO_ACCOUNTS_URL")}/oauth/v2/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-  const payload = (await response.json()) as { access_token?: string };
-  if (!response.ok || !payload.access_token) {
-    throw new FuelJudgeError("Fuel CRM credentials were not accepted.", 502);
+  try {
+    return await getZohoAccessToken();
+  } catch (err) {
+    throw tokenFailure(err);
   }
-  return payload.access_token;
+}
+
+function tokenFailure(err: unknown): Error {
+  if (err instanceof ZohoRateLimitError) return new FuelJudgeError("CRM syncing. Try again in a few minutes.", 503);
+  if (err instanceof ZohoTokenError) return new FuelJudgeError(err.message, err.status);
+  return err instanceof Error ? err : new FuelJudgeError("Fuel CRM credentials were not accepted.", 502);
 }
 
 function requiredEnv(name: string) {

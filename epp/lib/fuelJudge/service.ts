@@ -1,3 +1,4 @@
+import { getZohoAccessToken, readZohoCatalog, rememberZohoCatalog, ZohoRateLimitError, ZohoTokenError } from "@/lib/zohoToken";
 import { SAMPLE_APPLICATIONS, applicationsForStage } from "./catalog";
 import {
   buildCrmRecord,
@@ -43,14 +44,29 @@ export async function fuelDashboard(client: FuelCrmClient = defaultClient(), opt
   }
   const config = getFuelConfig();
   const stage = activeStage(config);
-  const applications = applicationsForStage(await client.listApplications(), stage);
-  return {
-    mode: fuelCrmMode(),
-    writesEnabled: fuelWritesEnabled(),
-    config,
-    stage,
-    applications,
-  };
+  try {
+    const applications = applicationsForStage(await client.listApplications(), stage);
+    return {
+      mode: fuelCrmMode(),
+      writesEnabled: fuelWritesEnabled(),
+      config,
+      stage,
+      applications,
+      syncing: false,
+    };
+  } catch (err) {
+    if (err instanceof ZohoRateLimitError) {
+      return {
+        mode: fuelCrmMode(),
+        writesEnabled: fuelWritesEnabled(),
+        config,
+        stage,
+        applications: applicationsForStage(err.applications, stage),
+        syncing: true,
+      };
+    }
+    throw err;
+  }
 }
 
 export async function submitFuelReview(
@@ -114,7 +130,13 @@ function defaultClient(): FuelCrmClient {
 
 async function listFromConfiguredSource() {
   if (fuelCrmMode() !== "live") return SAMPLE_APPLICATIONS.map((row) => ({ ...row }));
-  const token = await fuelAccessToken();
+  let token: string;
+  try {
+    token = await getZohoAccessToken();
+  } catch (err) {
+    if (err instanceof ZohoRateLimitError) throw new ZohoRateLimitError(await readZohoCatalog("judge") ?? []);
+    throw tokenFailure(err);
+  }
   const domain = requiredEnv("FUEL_ZOHO_API_DOMAIN");
   const config = getFuelConfig();
   const pipelines = [...new Set(config.stages.flatMap((stage) => stage.pipelines))];
@@ -140,10 +162,12 @@ async function listFromConfiguredSource() {
   } catch {
     feedback = new Map();
   }
-  return applications.map((row) => ({
+  const listed = applications.map((row) => ({
     ...row,
     initialFeedback: feedback.get(row.id) || [],
   }));
+  await rememberZohoCatalog("judge", listed);
+  return listed;
 }
 
 async function stageOneFeedback(token: string, domain: string, ids: string[]) {
@@ -209,22 +233,17 @@ async function coql(token: string, domain: string, selectQuery: string) {
 }
 
 async function fuelAccessToken() {
-  const body = new URLSearchParams({
-    refresh_token: requiredEnv("FUEL_ZOHO_REFRESH_TOKEN"),
-    client_id: requiredEnv("FUEL_ZOHO_CLIENT_ID"),
-    client_secret: requiredEnv("FUEL_ZOHO_CLIENT_SECRET"),
-    grant_type: "refresh_token",
-  });
-  const response = await fetch(`${requiredEnv("FUEL_ZOHO_ACCOUNTS_URL")}/oauth/v2/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
-  const payload = (await response.json()) as { access_token?: string };
-  if (!response.ok || !payload.access_token) {
-    throw new FuelJudgeError("Fuel CRM credentials were not accepted.", 502);
+  try {
+    return await getZohoAccessToken();
+  } catch (err) {
+    throw tokenFailure(err);
   }
-  return payload.access_token;
+}
+
+function tokenFailure(err: unknown) {
+  if (err instanceof ZohoRateLimitError) return new FuelJudgeError("CRM syncing. Try again in a few minutes.", 503);
+  if (err instanceof ZohoTokenError) return new FuelJudgeError(err.message, err.status);
+  return err;
 }
 
 function requiredEnv(name: string) {

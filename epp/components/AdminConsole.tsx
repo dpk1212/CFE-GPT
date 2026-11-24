@@ -15,6 +15,7 @@ type BoardPayload = {
   writesEnabled: boolean;
   applications: FuelApplication[];
   audit: FuelAuditEntry[];
+  syncing?: boolean;
 };
 
 const SECTIONS = [
@@ -134,6 +135,7 @@ function AdminConsoleInner({ accounts }: { accounts: DeskAccount[] }) {
           <p className="eyebrow">Entrepreneurial Practice Programs</p>
           <h1>{current.label}</h1>
         </header>
+        {board?.syncing ? <p className="console-status">CRM syncing</p> : null}
         {section === "overview" ? (
           <Overview
             accounts={accounts}

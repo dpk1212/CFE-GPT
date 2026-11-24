@@ -22,6 +22,7 @@ type DashboardPayload = {
   writesEnabled: boolean;
   stage: FuelStageConfig;
   applications: FuelApplication[];
+  syncing?: boolean;
 };
 
 type Props = {
@@ -446,6 +447,7 @@ export function JudgeWorkspace({ judgeName, judgeEmail }: Props) {
           </div>
         </dl>
       </header>
+      {dashboard.syncing ? <p className="desk-note">CRM syncing</p> : null}
       <p className="desk-note">
         Signed in as {judgeName}. Every approved judge sees this queue.
         {dashboard.mode === "mock"
