@@ -12,6 +12,8 @@ export type Account = {
 };
 
 export const BOOTSTRAP_ADMIN_EMAIL = "kolnitd@umich.edu";
+/** Dale signs in with this Google account. It is an admin, same as the umich address. */
+export const DALE_GOOGLE_ADMIN_EMAIL = "kolnitd12@gmail.com";
 
 export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -98,12 +100,38 @@ export function admitGoogleIdentity(
   if (name.length < 2 || !email.includes("@") || email.startsWith("@") || email.endsWith("@")) {
     return { accounts, error: "Google did not return a usable name and email." };
   }
+  if (email === BOOTSTRAP_ADMIN_EMAIL || email === DALE_GOOGLE_ADMIN_EMAIL) {
+    return approveAdmin(accounts, email, name || "Dale Kolnitys", input.passwordHash, now);
+  }
   const existing = accounts.find((account) => account.email === email);
   if (existing?.status === "approved") return { accounts, outcome: "approved" as const, account: existing };
   if (existing?.status === "pending" || existing?.role === "admin") return { accounts, outcome: "pending" as const };
   const requested = requestJudge(accounts, { name, email, passwordHash: input.passwordHash }, now);
   if (requested.error) return { accounts, error: requested.error };
   return { accounts: requested.accounts, outcome: "pending" as const };
+}
+
+function approveAdmin(
+  accounts: Account[],
+  email: string,
+  name: string,
+  passwordHash: string,
+  now: string,
+) {
+  const existing = accounts.find((account) => account.email === email);
+  const account: Account = {
+    name: existing?.name || name,
+    email,
+    passwordHash: existing?.passwordHash || passwordHash,
+    role: "admin",
+    status: "approved",
+    createdAt: existing?.createdAt || now,
+    reviewedAt: now,
+  };
+  const next = existing
+    ? accounts.map((item) => (item.email === email ? account : item))
+    : [...accounts, account];
+  return { accounts: next, outcome: "approved" as const, account };
 }
 
 export function loginResult(accounts: Account[], email: string, passwordMatches: boolean, role: Role) {

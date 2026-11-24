@@ -4,6 +4,7 @@ import { Poppins } from "next/font/google";
 import { cookies } from "next/headers";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { APP_URL, canonicalUrl } from "@/lib/appUrl";
 import { clerkAppearance, clerkConfigured } from "@/lib/clerk";
 import { openSession, SESSION_COOKIE } from "@/lib/session";
 import "./globals.css";
@@ -30,7 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   );
   if (!clerk) return page;
   return (
-    <ClerkProvider appearance={clerkAppearance} signInUrl="/login" signUpUrl="/login" afterSignOutUrl="/">
+    <ClerkProvider appearance={clerkAppearance} signInUrl={canonicalUrl("/login")} signUpUrl={canonicalUrl("/login")} afterSignOutUrl={APP_URL}>
       {page}
     </ClerkProvider>
   );

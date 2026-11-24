@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { admitGoogleIdentity, bootstrapAdmin, createAdmin, loginResult, requestJudge, reviewRequest, type Account } from "./accounts.ts";
+import { admitGoogleIdentity, bootstrapAdmin, createAdmin, DALE_GOOGLE_ADMIN_EMAIL, loginResult, requestJudge, reviewRequest, type Account } from "./accounts.ts";
 
 const now = "2026-11-24T13:00:00.000Z";
 
@@ -46,6 +46,17 @@ test("google sign-in matches an approved email and parks a new one", () => {
   const again = admitGoogleIdentity(created.accounts, { name: "New Judge", email: "new.judge@example.com", passwordHash: "other" }, now);
   assert.equal(again.outcome, "pending");
   assert.equal(again.accounts.filter((account) => account.email === "new.judge@example.com").length, 1);
+});
+
+test("Dale's Google account is an admin even if a pending judge row exists", () => {
+  const pending = requestJudge([], { name: "Dale Kolnitys", email: DALE_GOOGLE_ADMIN_EMAIL, passwordHash: "old" }, now);
+  const admitted = admitGoogleIdentity(pending.accounts, { name: "Dale Kolnitys", email: "Kolnitd12@gmail.com", passwordHash: "unused" }, now);
+  assert.equal(admitted.outcome, "approved");
+  if (admitted.outcome === "approved") {
+    assert.equal(admitted.account.role, "admin");
+    assert.equal(admitted.account.email, DALE_GOOGLE_ADMIN_EMAIL);
+  }
+  assert.equal(admitted.accounts.filter((account) => account.email === DALE_GOOGLE_ADMIN_EMAIL).length, 1);
 });
 
 test("only a new email can become an admin", () => {

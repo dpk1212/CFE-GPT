@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
 import { LoginForm } from "@/components/LoginForm";
+import { canonicalUrl } from "@/lib/appUrl";
 import { clerkAppearance, clerkConfigured } from "@/lib/clerk";
 
 export const metadata: Metadata = { title: "Log in" };
@@ -31,7 +32,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </article>
     );
   }
-  const redirectUrl = next ? `/login/continue?next=${next}` : "/login/continue";
+  const redirectUrl = canonicalUrl(next ? `/login/continue?next=${next}` : "/login/continue");
   return (
     <article className="gate">
       <section className="panel login-panel">
