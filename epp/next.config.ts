@@ -5,8 +5,11 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   outputFileTracingRoot: path.join(__dirname),
-  // Keep pdfkit + react-pdf out of the serverless bundle so standard-font files stay resolvable.
+  // Keep pdfkit out of the serverless bundle; Poppins TTFs are traced in explicitly.
   serverExternalPackages: ["@react-pdf/renderer", "@react-pdf/font", "pdfkit", "fontkit"],
+  outputFileTracingIncludes: {
+    "/api/feedback/[applicationId]/pdf": ["./fonts/**/*"],
+  },
 };
 
 export default nextConfig;

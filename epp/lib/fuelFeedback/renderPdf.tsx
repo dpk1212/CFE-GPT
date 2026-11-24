@@ -1,3 +1,4 @@
+import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { FeedbackPdfDocument } from "./pdf";
 import { ensurePdfFonts } from "./registerPdfFonts";
