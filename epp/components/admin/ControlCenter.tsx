@@ -5,11 +5,13 @@ import type { DeskAccount } from "@/components/AdminDesk";
 import type { FuelAuditEntry } from "@/lib/fuelAdmin/store";
 import {
   awaitingFeedback,
+  awardedCount,
   bottleneck,
   formatMoney,
   fundingSum,
   inReviewCount,
   missingRequired,
+  orderedStages,
   pipelineBreakdown,
   pipelineLabel,
   reviewTotals,
@@ -25,6 +27,7 @@ import {
 import type { FuelDeskReview } from "@/lib/fuelAdmin/reviews";
 import type { FuelApplication } from "@/lib/fuelJudge/types";
 import { moneyCompact, whenEt } from "./adminFormat";
+import { stageTone } from "./stageTone";
 
 type BoardPayload = {
   mode: "live" | "mock";
@@ -32,6 +35,7 @@ type BoardPayload = {
   applications: FuelApplication[];
   audit: FuelAuditEntry[];
   truncated?: boolean;
+  omitted?: number;
   syncing?: boolean;
 };
 
@@ -51,15 +55,9 @@ type InsightsPayload = {
   };
   daysInStageReason?: string;
   feedbackWarning?: string;
+  truncated?: boolean;
+  omitted?: number;
 };
-
-function stageTone(stage: string): "idle" | "warn" | "active" | "good" | "bad" | "neutral" {
-  if (stage === "Needs Completeness Check" || stage === "Student Revision Needed") return "warn";
-  if ((IN_REVIEW_STAGES as readonly string[]).includes(stage)) return "active";
-  if (stage === "Funding Awarded" || stage === "Initial Feedback Returned") return "good";
-  if (stage === "Not Invited To Present" || stage === "No Funding") return "bad";
-  return "neutral";
-}
 
 export function ControlCenter({
   accounts,
@@ -99,20 +97,21 @@ export function ControlCenter({
   const counts = useMemo(() => storedCounts(deskReviews), [deskReviews]);
 
   const funnel = useMemo(() => {
-    if (insights?.funding?.byStage) {
-      return insights.funding.byStage.filter((item) => item.count > 0);
+    const byStage = new Map<string, { stage: string; count: number; requested: number }>();
+    for (const item of insights?.funding?.byStage ?? []) {
+      byStage.set(item.stage, { ...item });
     }
-    return applications
-      .reduce<{ stage: string; count: number; requested: number }[]>((rows, app) => {
-        const existing = rows.find((row) => row.stage === app.stage);
-        if (existing) {
-          existing.count += 1;
-          existing.requested += app.fundingRequested ?? 0;
-          return rows;
-        }
-        return [...rows, { stage: app.stage, count: 1, requested: app.fundingRequested ?? 0 }];
-      }, [])
-      .sort((a, b) => b.count - a.count);
+    if (!insights?.funding?.byStage?.length) {
+      for (const app of applications) {
+        const current = byStage.get(app.stage) ?? { stage: app.stage, count: 0, requested: 0 };
+        current.count += 1;
+        current.requested += app.fundingRequested ?? 0;
+        byStage.set(app.stage, current);
+      }
+    }
+    return orderedStages(byStage.keys())
+      .map((stage) => byStage.get(stage))
+      .filter((item): item is { stage: string; count: number; requested: number } => Boolean(item && item.count > 0));
   }, [applications, insights]);
 
   const pipelines = useMemo(() => {
@@ -122,6 +121,7 @@ export function ControlCenter({
 
   const pendingJudges = accounts.filter((account) => account.role === "judge" && account.status === "pending").length;
   const fundingRequested = insights?.funding?.requested ?? fundingSum(applications).sum;
+  const awarded = awardedCount(applications);
   const inReview = inReviewCount(applications);
   const judgeReviews = reviewTotals(applications).sum + deskReviews.length;
   const topBottleneck = bottleneck(applications);
@@ -129,12 +129,14 @@ export function ControlCenter({
   const noFeedback = awaitingFeedback(applications, counts).slice(0, 5);
   const stale = staleApplications(applications, 5);
   const maxFunnel = Math.max(1, ...funnel.map((item) => item.count));
+  const omitted = board?.omitted ?? insights?.omitted ?? 0;
+  const truncated = Boolean(board?.truncated || insights?.truncated);
 
   if (loading && !board) {
     return (
       <div className="cc-skeleton" aria-busy="true" aria-label="Loading control center">
         <div className="cc-kpi-strip">
-          {Array.from({ length: 4 }).map((_, index) => <div key={index} className="cc-kpi is-skeleton" />)}
+          {Array.from({ length: 5 }).map((_, index) => <div key={index} className="cc-kpi is-skeleton" />)}
         </div>
         <div className="cc-grid">
           <div className="cc-card is-skeleton tall" />
@@ -158,7 +160,11 @@ export function ControlCenter({
       id: "apps",
       label: "Applications",
       value: String(applications.length),
-      hint: board?.mode === "mock" ? "Sample desk" : board?.truncated ? "Paged CRM read" : "Fuel pipelines",
+      hint: truncated || omitted
+        ? `${omitted ? `${omitted} unnamed omitted` : "Paged CRM read"}`
+        : board?.mode === "mock"
+          ? "Sample desk"
+          : "Named Fuel deals",
       accent: "primary" as const,
       onClick: () => onOpen("pipeline"),
     },
@@ -166,9 +172,17 @@ export function ControlCenter({
       id: "funding",
       label: "Funding requested",
       value: moneyCompact(fundingRequested),
-      hint: "Awarded $ not in CRM mapping",
+      hint: "Sum of requested amounts",
       accent: "navy" as const,
       onClick: () => onOpen("pipeline"),
+    },
+    {
+      id: "awarded",
+      label: "Awarded",
+      value: String(awarded),
+      hint: "Count in award stages · no $ field",
+      accent: awarded > 0 ? ("good" as const) : ("muted" as const),
+      onClick: () => onOpen("pipeline", { stage: "Funding Awarded" }),
     },
     {
       id: "review",
@@ -292,10 +306,10 @@ export function ControlCenter({
             {stale.map(({ application, at }) => (
               <li key={`stale-${application.id}`}>
                 <button type="button" onClick={() => onOpen("pipeline", { stage: application.stage, pipeline: application.pipeline })}>
-                  <span className="cc-attention-kind kind-stale">Stale</span>
+                  <span className="cc-attention-kind kind-stale">Last updated</span>
                   <strong>{application.projectName}</strong>
                   <span>
-                    Last CRM change {Math.max(0, Math.floor((Date.now() - at) / 86_400_000))} days ago · {application.stage}.
+                    Last updated {Math.max(0, Math.floor((Date.now() - at) / 86_400_000))} days ago · {application.stage}.
                   </span>
                 </button>
               </li>
@@ -358,7 +372,9 @@ export function ControlCenter({
       </div>
 
       <p className="cc-footnote quiet">
-        Omitted KPIs: average days in stage ({insights?.daysInStageReason || DAYS_IN_STAGE_REASON}) · awarded dollars ({insights?.funding?.awardedReason || AWARDED_DOLLARS_REASON})
+        Average days in stage is omitted ({insights?.daysInStageReason || DAYS_IN_STAGE_REASON}) Use Last updated from Modified_Time instead.
+        Awarded dollars are omitted ({insights?.funding?.awardedReason || AWARDED_DOLLARS_REASON}) The Awarded KPI is a stage count.
+        {truncated || omitted ? ` Pipeline read: ${applications.length} named deals${omitted ? `, ${omitted} omitted for blank names` : ""}.` : ""}
         {insights?.feedbackWarning ? ` · ${insights.feedbackWarning}` : ""}
       </p>
     </div>

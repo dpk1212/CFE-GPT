@@ -21,7 +21,9 @@ export const IN_REVIEW_STAGES = [
   "Out For Initial Review",
   "Initial Feedback Returned",
   "Invited For Presentation",
+  "Student Invited to Meet with Fuel staff",
   "Out For Funding Decision",
+  "Award Tentatively Approved",
 ] as const;
 
 /** Already sent to judges, so a missing review is an action. */
@@ -29,8 +31,25 @@ export const AWAITING_FEEDBACK_STAGES = [
   "Out For Initial Review",
   "Initial Feedback Returned",
   "Invited For Presentation",
+  "Student Invited to Meet with Fuel staff",
   "Out For Funding Decision",
 ] as const;
+
+export const AWARDED_STAGES = ["Funding Awarded", "Award Tentatively Approved"] as const;
+
+export function awardedCount(applications: FuelApplication[]) {
+  const stages = new Set<string>(AWARDED_STAGES);
+  return applications.filter((application) => stages.has(application.stage)).length;
+}
+
+/** Keep known Fuel order; append any live CRM stages we have not listed yet. */
+export function orderedStages(present: Iterable<string> = []) {
+  const order = [...FUEL_STATUSES] as string[];
+  for (const stage of present) {
+    if (stage && !order.includes(stage)) order.push(stage);
+  }
+  return order;
+}
 
 type DocKey = (typeof REQUIRED_DOCS)[number]["key"] | (typeof SUPPORTING_DOCS)[number]["key"];
 

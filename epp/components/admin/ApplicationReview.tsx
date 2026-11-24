@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { money, shown } from "@/components/admin/adminFormat";
+import { stageTone } from "@/components/admin/stageTone";
 import { EDITABLE_FIELDS, readEditable, type EditableDeal } from "@/lib/fuelAdmin/fields";
 import {
   completeness,
   documentChecklist,
   formatMoney,
+  orderedStages,
   pipelineLabel,
   stageSlug,
 } from "@/lib/fuelAdmin/metrics";
@@ -15,20 +17,6 @@ import { FUEL_PIPELINES, FUEL_STATUSES, type FuelApplication } from "@/lib/fuelJ
 
 type ChangeRow = { label: string; old: string; new: string };
 type TabId = "review" | "edit";
-
-function stageTone(stage: string) {
-  if (stage === "Needs Completeness Check" || stage === "Student Revision Needed") return "warn";
-  if (stage === "Funding Awarded" || stage === "Initial Feedback Returned" || stage === "Invited For Presentation") return "good";
-  if (stage === "Not Invited To Present" || stage === "No Funding") return "bad";
-  if (
-    stage === "Ready For Initial Review" ||
-    stage === "Out For Initial Review" ||
-    stage === "Out For Funding Decision"
-  ) {
-    return "active";
-  }
-  return "neutral";
-}
 
 export function ApplicationReview({
   application,
@@ -104,7 +92,7 @@ export function ApplicationReview({
     if (field.kind === "stage") {
       return (
         <select value={draft.stage} onChange={(event) => setDraft({ ...draft, stage: event.target.value })}>
-          {FUEL_STATUSES.map((item) => <option key={item}>{item}</option>)}
+          {orderedStages([application.stage, draft.stage, ...FUEL_STATUSES]).map((item) => <option key={item}>{item}</option>)}
         </select>
       );
     }
@@ -171,7 +159,7 @@ export function ApplicationReview({
                   setTab("edit");
                 }}
               >
-                {FUEL_STATUSES.map((item) => <option key={item}>{item}</option>)}
+                {orderedStages([application.stage, ...FUEL_STATUSES]).map((item) => <option key={item}>{item}</option>)}
               </select>
             </label>
             <button className="btn-line" type="button" onClick={onClose}>Close</button>

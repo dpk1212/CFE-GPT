@@ -11,8 +11,10 @@ export const FUEL_STATUSES = [
   "Out For Initial Review",
   "Initial Feedback Returned",
   "Invited For Presentation",
+  "Student Invited to Meet with Fuel staff",
   "Not Invited To Present",
   "Out For Funding Decision",
+  "Award Tentatively Approved",
   "Funding Awarded",
   "No Funding",
 ] as const;

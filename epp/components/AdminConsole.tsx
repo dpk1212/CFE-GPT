@@ -17,6 +17,7 @@ type BoardPayload = {
   applications: FuelApplication[];
   audit: FuelAuditEntry[];
   truncated?: boolean;
+  omitted?: number;
   syncing?: boolean;
 };
 

@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApplicationReview } from "@/components/admin/ApplicationReview";
 import { PIPELINE_VIEW_KEY, money, pipelineShort } from "@/components/admin/adminFormat";
+import { stageTone } from "@/components/admin/stageTone";
 import type { EditableDeal } from "@/lib/fuelAdmin/fields";
 import {
   completeness,
   feedbackBadge,
   formatMoney,
   fundingSum,
+  orderedStages,
   pipelineLabel,
   stageSlug,
 } from "@/lib/fuelAdmin/metrics";
@@ -21,26 +23,11 @@ type BoardPayload = {
   applications: FuelApplication[];
   audit: FuelAuditEntry[];
   truncated?: boolean;
+  omitted?: number;
 };
 
 type ViewMode = "board" | "table";
 type SortKey = "projectName" | "pipeline" | "stage" | "fundingRequested" | "completeness" | "feedback";
-
-function stageTone(stage: string) {
-  if (stage === "Needs Completeness Check" || stage === "Student Revision Needed") return "warn";
-  if (
-    stage === "Ready For Initial Review" ||
-    stage === "Out For Initial Review" ||
-    stage === "Out For Funding Decision" ||
-    stage === "Initial Feedback Returned" ||
-    stage === "Invited For Presentation"
-  ) {
-    return "active";
-  }
-  if (stage === "Funding Awarded") return "good";
-  if (stage === "Not Invited To Present" || stage === "No Funding") return "bad";
-  return "neutral";
-}
 
 export function PipelineBoard({
   board,
@@ -103,13 +90,7 @@ export function PipelineBoard({
   }, [board, pipeline, query, stage]);
 
   const columns = useMemo(() => {
-    const order = [...FUEL_STATUSES];
-    for (const row of rows) {
-      if (!order.includes(row.stage as (typeof FUEL_STATUSES)[number])) {
-        order.push(row.stage as (typeof FUEL_STATUSES)[number]);
-      }
-    }
-    return order
+    return orderedStages(rows.map((row) => row.stage))
       .map((name) => {
         const apps = rows.filter((row) => row.stage === name);
         return { stage: name, rows: apps, funding: fundingSum(apps).sum };
@@ -202,7 +183,9 @@ export function PipelineBoard({
               : board.writesEnabled
                 ? " Confirmed edits are written to Fuel CRM deals in the Fuel pipelines."
                 : " Confirmed edits stay on this desk until Fuel admin writes are turned on."}
-            {board.truncated ? " CRM results were paged; later deals may still be loading on refresh." : ""}
+            {board.truncated || board.omitted
+              ? ` ${board.applications.length} named deals${board.omitted ? `, ${board.omitted} omitted for blank names` : ""}.`
+              : ""}
           </p>
 
           <div className="pipeline-toolbar">
